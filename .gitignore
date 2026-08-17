@@ -1,0 +1,29 @@
+# Quartus Prime temporary and build files
+db/
+incremental_db/
+output_files/
+simulation/
+*.qws
+*.rpt
+*.smsg
+*.summary
+*.done
+*.jdi
+*.pin
+*.pof
+*.sof
+*.sld
+*.qdf
+
+# ModelSim / QuestaSim temporary files
+work/
+transcript
+*.wlf
+vsim.wlf
+*.log
+
+# OS & Editor files
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
