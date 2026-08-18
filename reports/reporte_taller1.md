@@ -1253,3 +1253,338 @@ endmodule
 4. **Conclusión:** La modulación del enable mediante el bit MSB permite expandir la dimensionalidad del decodificador de forma modular y jerárquica con cero interferencia entre bancos de salida.
 
 ---
+
+### 2.3. Decodificador Binario 4-to-16 Estructural (`dec4to16`)
+
+La extensión de la decodificación a 4 bits de entrada ($4 \text{-to-} 16$) se realiza mediante una **estructura en árbol de 2 niveles** empleando únicamente **5 instancias del bloque constructivo básico `dec2to4`**, sin requerir compuertas lógicas externas discretas.
+
+---
+
+#### 2.3.1. Arquitectura Jerárquica y Diagrama de Bloques
+
+* **Nivel 1 (Control / Habilitación):**
+  - Una instancia `U_DEC_CTRL` recibe la señal de habilitación global `en` y los dos bits más significativos de entrada $in(3 \text{ downto } 2)$.
+  - Genera un bus interno de 4 líneas de habilitación: `en_bus(3 downto 0)`.
+* **Nivel 2 (Decodificación de Datos):**
+  - Cuatro instancias `U_DEC0`, `U_DEC1`, `U_DEC2` y `U_DEC3` reciben en paralelo los dos bits menos significativos $in(1 \text{ downto } 0)$.
+  - Cada una es habilitada exclusivamente por una de las líneas del bus `en_bus`:
+    - `U_DEC0` (habilitado por `en_bus(0)`): genera $bcode(3 \text{ downto } 0)$.
+    - `U_DEC1` (habilitado por `en_bus(1)`): genera $bcode(7 \text{ downto } 4)$.
+    - `U_DEC2` (habilitado por `en_bus(2)`): genera $bcode(11 \text{ downto } 8)$.
+    - `U_DEC3` (habilitado por `en_bus(3)`): genera $bcode(15 \text{ downto } 12)$.
+
+```mermaid
+graph LR
+    EN["en (Global)"] --> CTRL["dec2to4 (Control - Nivel 1)"]
+    IN_MSB["in[3:2] (MSBs)"] --> CTRL
+
+    CTRL -->|"en_bus[0]"| DEC0["dec2to4_0"]
+    CTRL -->|"en_bus[1]"| DEC1["dec2to4_1"]
+    CTRL -->|"en_bus[2]"| DEC2["dec2to4_2"]
+    CTRL -->|"en_bus[3]"| DEC3["dec2to4_3"]
+
+    IN_LSB["in[1:0] (LSBs)"] --> DEC0
+    IN_LSB --> DEC1
+    IN_LSB --> DEC2
+    IN_LSB --> DEC3
+
+    DEC0 --> OUT0["bcode[3:0]"]
+    DEC1 --> OUT1["bcode[7:4]"]
+    DEC2 --> OUT2["bcode[11:8]"]
+    DEC3 --> OUT3["bcode[15:12]"]
+```
+*Figura 4. Diagrama de bloques estructural del decodificador binario 4-to-16 con 5 módulos 2-to-4.*
+
+---
+
+#### 2.3.2. Tabla de Verdad
+Sean $en$, $in\_v = (in_3, in_2, in_1, in_0)$ y $bcode = (b_{15} \dots b_0)$:
+
+| `en` | $in_3$ | $in_2$ | $in_1$ | $in_0$ | Decimal $in$ | `en_bus` ($3 \dots 0$) | Bloque Activo | `bcode` ($b_{15} \dots b_0$) en Hexadecimal |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 0 | - | - | - | - | - | `0000` | Ninguno | `0000h` |
+| 1 | 0 | 0 | 0 | 0 | 0 | `0001` | `U_DEC0` | `0001h` ($b_0 = 1$) |
+| 1 | 0 | 0 | 0 | 1 | 1 | `0001` | `U_DEC0` | `0002h` ($b_1 = 1$) |
+| 1 | 0 | 0 | 1 | 0 | 2 | `0001` | `U_DEC0` | `0004h` ($b_2 = 1$) |
+| 1 | 0 | 0 | 1 | 1 | 3 | `0001` | `U_DEC0` | `0008h` ($b_3 = 1$) |
+| 1 | 0 | 1 | 0 | 0 | 4 | `0010` | `U_DEC1` | `0010h` ($b_4 = 1$) |
+| 1 | 0 | 1 | 0 | 1 | 5 | `0010` | `U_DEC1` | `0020h` ($b_5 = 1$) |
+| 1 | 0 | 1 | 1 | 0 | 6 | `0010` | `U_DEC1` | `0040h` ($b_6 = 1$) |
+| 1 | 0 | 1 | 1 | 1 | 7 | `0010` | `U_DEC1` | `0080h` ($b_7 = 1$) |
+| 1 | 1 | 0 | 0 | 0 | 8 | `0100` | `U_DEC2` | `0100h` ($b_8 = 1$) |
+| 1 | 1 | 0 | 0 | 1 | 9 | `0100` | `U_DEC2` | `0200h` ($b_9 = 1$) |
+| 1 | 1 | 0 | 1 | 0 | 10 | `0100` | `U_DEC2` | `0400h` ($b_{10} = 1$) |
+| 1 | 1 | 0 | 1 | 1 | 11 | `0100` | `U_DEC2` | `0800h` ($b_{11} = 1$) |
+| 1 | 1 | 1 | 0 | 0 | 12 | `1000` | `U_DEC3` | `1000h` ($b_{12} = 1$) |
+| 1 | 1 | 1 | 0 | 1 | 13 | `1000` | `U_DEC3` | `2000h` ($b_{13} = 1$) |
+| 1 | 1 | 1 | 1 | 0 | 14 | `1000` | `U_DEC3` | `4000h` ($b_{14} = 1$) |
+| 1 | 1 | 1 | 1 | 1 | 15 | `1000` | `U_DEC3` | `8000h` ($b_{15} = 1$) |
+
+---
+
+#### 2.3.3. Códigos HDL y Testbenches
+
+##### Código VHDL (`dec4to16.vhd`)
+```vhdl
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity dec4to16 is
+    port (
+        en    : in  std_logic;
+        in_v  : in  std_logic_vector(3 downto 0);
+        bcode : out std_logic_vector(15 downto 0)
+    );
+end entity dec4to16;
+
+architecture Structural of dec4to16 is
+    component dec2to4 is
+        port (
+            en    : in  std_logic;
+            in_v  : in  std_logic_vector(1 downto 0);
+            bcode : out std_logic_vector(3 downto 0)
+        );
+    end component;
+
+    signal en_bus : std_logic_vector(3 downto 0);
+begin
+    -- Nivel 1: Decodificador de control sobre los MSBs
+    U_DEC_CTRL: dec2to4
+        port map (
+            en    => en,
+            in_v  => in_v(3 downto 2),
+            bcode => en_bus
+        );
+
+    -- Nivel 2: Cuatro decodificadores de datos sobre los LSBs
+    U_DEC0: dec2to4
+        port map (
+            en    => en_bus(0),
+            in_v  => in_v(1 downto 0),
+            bcode => bcode(3 downto 0)
+        );
+
+    U_DEC1: dec2to4
+        port map (
+            en    => en_bus(1),
+            in_v  => in_v(1 downto 0),
+            bcode => bcode(7 downto 4)
+        );
+
+    U_DEC2: dec2to4
+        port map (
+            en    => en_bus(2),
+            in_v  => in_v(1 downto 0),
+            bcode => bcode(11 downto 8)
+        );
+
+    U_DEC3: dec2to4
+        port map (
+            en    => en_bus(3),
+            in_v  => in_v(1 downto 0),
+            bcode => bcode(15 downto 12)
+        );
+
+end architecture Structural;
+```
+
+##### Testbench VHDL (`dec4to16_tb.vhd`)
+```vhdl
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+
+entity dec4to16_tb is
+end entity dec4to16_tb;
+
+architecture Behavioral of dec4to16_tb is
+    component dec4to16 is
+        port (
+            en    : in  std_logic;
+            in_v  : in  std_logic_vector(3 downto 0);
+            bcode : out std_logic_vector(15 downto 0)
+        );
+    end component;
+
+    signal en_tb    : std_logic := '0';
+    signal in_v_tb  : std_logic_vector(3 downto 0) := "0000";
+    signal bcode_tb : std_logic_vector(15 downto 0);
+
+    constant T_STEP : time := 20 ns;
+begin
+    DUT: dec4to16
+        port map (
+            en    => en_tb,
+            in_v  => in_v_tb,
+            bcode => bcode_tb
+        );
+
+    stim_proc: process
+        variable expected_val : std_logic_vector(15 downto 0);
+    begin
+        -- Caso 1: Deshabilitado (en = '0')
+        en_tb <= '0';
+        for i in 0 to 15 loop
+            in_v_tb <= std_logic_vector(to_unsigned(i, 4));
+            wait for T_STEP;
+            assert bcode_tb = X"0000"
+                report "ERROR en en=0: Se esperaba 0000h"
+                severity error;
+        end loop;
+
+        -- Caso 2: Habilitado (en = '1')
+        en_tb <= '1';
+        for i in 0 to 15 loop
+            in_v_tb <= std_logic_vector(to_unsigned(i, 4));
+            wait for T_STEP;
+            
+            expected_val := (others => '0');
+            expected_val(i) := '1';
+
+            assert bcode_tb = expected_val
+                report "ERROR en en=1 para in=" & integer'image(i)
+                severity error;
+        end loop;
+
+        report ">>> Simulacion exhaustiva de dec4to16_tb completada exitosamente. <<<" severity note;
+        wait;
+    end process;
+end architecture Behavioral;
+```
+
+##### Código Verilog (`dec4to16.v`)
+```verilog
+`timescale 1ns / 1ps
+
+module dec4to16 (
+    input  wire        en,
+    input  wire [3:0]  in_v,
+    output wire [15:0] bcode
+);
+
+    wire [3:0] en_bus;
+
+    // Nivel 1: Control (MSBs)
+    dec2to4 u_dec_ctrl (
+        .en(en),
+        .in_v(in_v[3:2]),
+        .bcode(en_bus)
+    );
+
+    // Nivel 2: Datos (LSBs)
+    dec2to4 u_dec0 (
+        .en(en_bus[0]),
+        .in_v(in_v[1:0]),
+        .bcode(bcode[3:0])
+    );
+
+    dec2to4 u_dec1 (
+        .en(en_bus[1]),
+        .in_v(in_v[1:0]),
+        .bcode(bcode[7:4])
+    );
+
+    dec2to4 u_dec2 (
+        .en(en_bus[2]),
+        .in_v(in_v[1:0]),
+        .bcode(bcode[11:8])
+    );
+
+    dec2to4 u_dec3 (
+        .en(en_bus[3]),
+        .in_v(in_v[1:0]),
+        .bcode(bcode[15:12])
+    );
+
+endmodule
+```
+
+##### Testbench Verilog (`dec4to16_tb.v`)
+```verilog
+`timescale 1ns / 1ps
+
+module dec4to16_tb;
+    reg         en;
+    reg  [3:0]  in_v;
+    wire [15:0] bcode;
+
+    integer i;
+    integer errors = 0;
+    reg [15:0] expected_val;
+
+    dec4to16 dut (
+        .en(en),
+        .in_v(in_v),
+        .bcode(bcode)
+    );
+
+    initial begin
+        en   = 1'b0;
+        in_v = 4'b0000;
+
+        // Caso 1: Enable desactivado
+        en = 1'b0;
+        for (i = 0; i < 16; i = i + 1) begin
+            in_v = i;
+            #20;
+            if (bcode !== 16'h0000) begin
+                $display("ERROR en en=0, in_v=%0d => Esperado=0000h, Obtenido=%h", i, bcode);
+                errors = errors + 1;
+            end
+        end
+
+        // Caso 2: Enable activado
+        en = 1'b1;
+        for (i = 0; i < 16; i = i + 1) begin
+            in_v = i;
+            expected_val = 16'h0001 << i;
+            #20;
+            if (bcode !== expected_val) begin
+                $display("ERROR en en=1, in_v=%0d => Esperado=%h, Obtenido=%h", i, expected_val, bcode);
+                errors = errors + 1;
+            end
+        end
+
+        if (errors == 0) begin
+            $display("================================================================");
+            $display(">>> Simulacion de dec4to16_tb exitosa: 0 errores encontrados. <<<");
+            $display("================================================================");
+        end else begin
+            $display(">>> Simulacion finalizada con %0d errores. <<<", errors);
+        end
+
+        $stop;
+    end
+endmodule
+```
+
+---
+
+#### 2.3.4. Circuito Generado por Quartus (RTL Viewer)
+
+> **[EVIDENCIA FOTOGRÁFICA 11: RTL VIEWER DEC4TO16]**  
+> *Guarda la captura de Quartus (Tools $\rightarrow$ Netlist Viewers $\rightarrow$ RTL Viewer) con el nombre `reports/images/dec4to16_rtl.png`.*
+
+![Circuito RTL del decodificador 4-to-16](images/dec4to16_rtl.png)
+
+---
+
+#### 2.3.5. Simulación en ModelSim y Análisis de Resultados
+
+> **[EVIDENCIA FOTOGRÁFICA 12: SIMULACIÓN MODELSIM DEC4TO16]**  
+> *Guarda la captura de la forma de onda de ModelSim con el nombre `reports/images/dec4to16_modelsim.png`.*
+
+![Forma de onda de la simulación del decodificador 4-to-16](images/dec4to16_modelsim.png)
+
+##### Análisis del Diagrama de Tiempos:
+1. **Fase de Deshabilitación ($t \in [0, 320)\,\text{ns}$):** Durante los primeros 16 vectores con $en = 0$, la salida permanece en `0000h` ($0\,\text{V}$ lógico en todos los pines).
+2. **Fase Activa ($t \in [320, 640)\,\text{ns}$):**
+   - Con $en = 1$, para cada entrada $in\_v = k$ ($k \in [0, 15]$), se observa la activación de la línea $b_k = 1$ (representada como un desplazamiento diagonal en el mapa de bits *One-Hot*).
+   - Se aprecia la activación secuencial del bus `en_bus`:
+     - $k \in [0, 3]$: `en_bus` = `"0001"` (activa `U_DEC0`).
+     - $k \in [4, 7]$: `en_bus` = `"0010"` (activa `U_DEC1`).
+     - $k \in [8, 11]$: `en_bus` = `"0100"` (activa `U_DEC2`).
+     - $k \in [12, 15]$: `en_bus` = `"1000"` (activa `U_DEC3`).
+3. **Conclusión:** La estructura modular de 2 niveles implementa fielmente la tabla de verdad del decodificador 4-to-16 maximizando la reutilización del diseño y simplificando el árbol de enrutamiento en FPGA.
+
+---

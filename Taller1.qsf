@@ -38,7 +38,7 @@
 
 set_global_assignment -name FAMILY "Cyclone V"
 set_global_assignment -name DEVICE 5CSEMA5F31C6
-set_global_assignment -name TOP_LEVEL_ENTITY dec3to8
+set_global_assignment -name TOP_LEVEL_ENTITY dec4to16
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION "13.0 SP1"
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "19:51:00  AUGUST 16, 2026"
 set_global_assignment -name LAST_QUARTUS_VERSION "13.0 SP1"
@@ -64,11 +64,13 @@ set_global_assignment -name VHDL_FILE ej1_greater_than/vhdl/src/eq2.vhd
 set_global_assignment -name VHDL_FILE ej1_greater_than/vhdl/src/gt4.vhd
 set_global_assignment -name VHDL_FILE ej2_decoders/vhdl/src/dec2to4.vhd
 set_global_assignment -name VHDL_FILE ej2_decoders/vhdl/src/dec3to8.vhd
+set_global_assignment -name VHDL_FILE ej2_decoders/vhdl/src/dec4to16.vhd
 set_global_assignment -name VHDL_FILE ej1_greater_than/vhdl/tb/gt2_tb.vhd
 set_global_assignment -name VHDL_FILE ej1_greater_than/vhdl/tb/eq2_tb.vhd
 set_global_assignment -name VHDL_FILE ej1_greater_than/vhdl/tb/gt4_tb.vhd
 set_global_assignment -name VHDL_FILE ej2_decoders/vhdl/tb/dec2to4_tb.vhd
 set_global_assignment -name VHDL_FILE ej2_decoders/vhdl/tb/dec3to8_tb.vhd
+set_global_assignment -name VHDL_FILE ej2_decoders/vhdl/tb/dec4to16_tb.vhd
 set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
 set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
