@@ -963,3 +963,293 @@ endmodule
 3. **Conclusión:** El circuito gate-level decodifica de forma unívoca cada combinación binaria sin generar transiciones espurias ni solapamientos entre salidas activas.
 
 ---
+
+### 2.2. Decodificador Binario 3-to-8 Estructural (`dec3to8`)
+
+Para diseñar un decodificador de 3 entradas y 8 salidas ($3 \text{-to-} 8$) a partir de bloques constructivos $2 \text{-to-} 4$, se utiliza el bit más significativo de la entrada ($in\_v(2)$) para alternar la habilitación entre dos instancias de `dec2to4`.
+
+---
+
+#### 2.2.1. Arquitectura Estructural y Diagrama de Bloques
+
+* **Bloque Inferior (`U_DEC_LOW`):**
+  - Habilitación: $en_{low} = en \cdot \overline{in(2)}$.
+  - Entradas: $in(1 \text{ downto } 0)$.
+  - Salidas: Gobierna las líneas $bcode(3 \text{ downto } 0)$ cuando $in(2) = 0$.
+* **Bloque Superior (`U_DEC_HIGH`):**
+  - Habilitación: $en_{high} = en \cdot in(2)$.
+  - Entradas: $in(1 \text{ downto } 0)$.
+  - Salidas: Gobierna las líneas $bcode(7 \text{ downto } 4)$ cuando $in(2) = 1$.
+
+```mermaid
+graph LR
+    EN["en"] --> AND_L["AND (en_low)"]
+    EN --> AND_H["AND (en_high)"]
+
+    IN2["in[2]"] --> NOT2["NOT"]
+    NOT2 --> AND_L
+    IN2 --> AND_H
+
+    IN_LSB["in[1:0]"] --> DEC_L["dec2to4 (Low)"]
+    AND_L -->|"en_low"| DEC_L
+    DEC_L --> OUT_L["bcode[3:0]"]
+
+    IN_LSB --> DEC_H["dec2to4 (High)"]
+    AND_H -->|"en_high"| DEC_H
+    DEC_H --> OUT_H["bcode[7:4]"]
+```
+*Figura 3. Diagrama de bloques estructural del decodificador binario 3-to-8.*
+
+---
+
+#### 2.2.2. Tabla de Verdad
+Sean $en$, $in\_v = (in_2, in_1, in_0)$ y $bcode = (b_7, b_6, b_5, b_4, b_3, b_2, b_1, b_0)$:
+
+| `en` | $in_2$ | $in_1$ | $in_0$ | Decimal $in$ | $en_{high}$ | $en_{low}$ | `bcode` ($b_7 \dots b_0$) | Línea Activa |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 0 | - | - | - | - | 0 | 0 | `00000000` | Ninguna |
+| 1 | 0 | 0 | 0 | 0 | 0 | 1 | `00000001` | $b_0$ |
+| 1 | 0 | 0 | 1 | 1 | 0 | 1 | `00000010` | $b_1$ |
+| 1 | 0 | 1 | 0 | 2 | 0 | 1 | `00000100` | $b_2$ |
+| 1 | 0 | 1 | 1 | 3 | 0 | 1 | `00001000` | $b_3$ |
+| 1 | 1 | 0 | 0 | 4 | 1 | 0 | `00010000` | $b_4$ |
+| 1 | 1 | 0 | 1 | 5 | 1 | 0 | `00100000` | $b_5$ |
+| 1 | 1 | 1 | 0 | 6 | 1 | 0 | `01000000` | $b_6$ |
+| 1 | 1 | 1 | 1 | 7 | 1 | 0 | `10000000` | $b_7$ |
+
+---
+
+#### 2.2.3. Códigos HDL y Testbenches
+
+##### Código VHDL (`dec3to8.vhd`)
+```vhdl
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity dec3to8 is
+    port (
+        en    : in  std_logic;
+        in_v  : in  std_logic_vector(2 downto 0);
+        bcode : out std_logic_vector(7 downto 0)
+    );
+end entity dec3to8;
+
+architecture Structural of dec3to8 is
+    component dec2to4 is
+        port (
+            en    : in  std_logic;
+            in_v  : in  std_logic_vector(1 downto 0);
+            bcode : out std_logic_vector(3 downto 0)
+        );
+    end component;
+
+    signal en_low  : std_logic;
+    signal en_high : std_logic;
+begin
+    -- Habilitación según el bit más significativo (in_v(2))
+    en_low  <= en and (not in_v(2));
+    en_high <= en and in_v(2);
+
+    -- Bloque inferior (salidas 3 downto 0)
+    U_DEC_LOW: dec2to4
+        port map (
+            en    => en_low,
+            in_v  => in_v(1 downto 0),
+            bcode => bcode(3 downto 0)
+        );
+
+    -- Bloque superior (salidas 7 downto 4)
+    U_DEC_HIGH: dec2to4
+        port map (
+            en    => en_high,
+            in_v  => in_v(1 downto 0),
+            bcode => bcode(7 downto 4)
+        );
+
+end architecture Structural;
+```
+
+##### Testbench VHDL (`dec3to8_tb.vhd`)
+```vhdl
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+
+entity dec3to8_tb is
+end entity dec3to8_tb;
+
+architecture Behavioral of dec3to8_tb is
+    component dec3to8 is
+        port (
+            en    : in  std_logic;
+            in_v  : in  std_logic_vector(2 downto 0);
+            bcode : out std_logic_vector(7 downto 0)
+        );
+    end component;
+
+    signal en_tb    : std_logic := '0';
+    signal in_v_tb  : std_logic_vector(2 downto 0) := "000";
+    signal bcode_tb : std_logic_vector(7 downto 0);
+
+    constant T_STEP : time := 20 ns;
+begin
+    DUT: dec3to8
+        port map (
+            en    => en_tb,
+            in_v  => in_v_tb,
+            bcode => bcode_tb
+        );
+
+    stim_proc: process
+        variable expected_val : std_logic_vector(7 downto 0);
+    begin
+        -- Caso 1: Enable desactivado (en = '0')
+        en_tb <= '0';
+        for i in 0 to 7 loop
+            in_v_tb <= std_logic_vector(to_unsigned(i, 3));
+            wait for T_STEP;
+            assert bcode_tb = "00000000"
+                report "ERROR en en=0: Se esperaba bcode=00000000"
+                severity error;
+        end loop;
+
+        -- Caso 2: Enable activado (en = '1')
+        en_tb <= '1';
+        for i in 0 to 7 loop
+            in_v_tb <= std_logic_vector(to_unsigned(i, 3));
+            wait for T_STEP;
+            
+            expected_val := (others => '0');
+            expected_val(i) := '1';
+
+            assert bcode_tb = expected_val
+                report "ERROR en en=1: Valor incorrecto para in=" & integer'image(i)
+                severity error;
+        end loop;
+
+        report ">>> Simulacion de dec3to8_tb completada exitosamente sin errores. <<<" severity note;
+        wait;
+    end process;
+end architecture Behavioral;
+```
+
+##### Código Verilog (`dec3to8.v`)
+```verilog
+`timescale 1ns / 1ps
+
+module dec3to8 (
+    input  wire       en,
+    input  wire [2:0] in_v,
+    output wire [7:0] bcode
+);
+
+    wire en_low;
+    wire en_high;
+
+    // Habilitación selectiva por bit MSB (in_v[2])
+    assign en_low  = en & ~in_v[2];
+    assign en_high = en &  in_v[2];
+
+    // Bloque inferior para bcode[3:0]
+    dec2to4 u_dec_low (
+        .en(en_low),
+        .in_v(in_v[1:0]),
+        .bcode(bcode[3:0])
+    );
+
+    // Bloque superior para bcode[7:4]
+    dec2to4 u_dec_high (
+        .en(en_high),
+        .in_v(in_v[1:0]),
+        .bcode(bcode[7:4])
+    );
+
+endmodule
+```
+
+##### Testbench Verilog (`dec3to8_tb.v`)
+```verilog
+`timescale 1ns / 1ps
+
+module dec3to8_tb;
+    reg        en;
+    reg  [2:0] in_v;
+    wire [7:0] bcode;
+
+    integer i;
+    integer errors = 0;
+    reg [7:0] expected_val;
+
+    dec3to8 dut (
+        .en(en),
+        .in_v(in_v),
+        .bcode(bcode)
+    );
+
+    initial begin
+        en   = 1'b0;
+        in_v = 3'b000;
+
+        // Caso 1: Enable desactivado (en = 0)
+        en = 1'b0;
+        for (i = 0; i < 8; i = i + 1) begin
+            in_v = i;
+            #20;
+            if (bcode !== 8'b00000000) begin
+                $display("ERROR en en=0, in_v=%0d => Esperado=00000000, Obtenido=%b", i, bcode);
+                errors = errors + 1;
+            end
+        end
+
+        // Caso 2: Enable activado (en = 1)
+        en = 1'b1;
+        for (i = 0; i < 8; i = i + 1) begin
+            in_v = i;
+            expected_val = 8'b00000001 << i;
+            #20;
+            if (bcode !== expected_val) begin
+                $display("ERROR en en=1, in_v=%0d => Esperado=%b, Obtenido=%b", i, expected_val, bcode);
+                errors = errors + 1;
+            end
+        end
+
+        if (errors == 0) begin
+            $display(">>> Simulacion de dec3to8_tb exitosa: 0 errores encontrados. <<<");
+        end else begin
+            $display(">>> Simulacion finalizada con %0d errores. <<<", errors);
+        end
+
+        $stop;
+    end
+endmodule
+```
+
+---
+
+#### 2.2.4. Circuito Generado por Quartus (RTL Viewer)
+
+> **[EVIDENCIA FOTOGRÁFICA 9: RTL VIEWER DEC3TO8]**  
+> *Guarda la captura de Quartus (Tools $\rightarrow$ Netlist Viewers $\rightarrow$ RTL Viewer) con el nombre `reports/images/dec3to8_rtl.png`.*
+
+![Circuito RTL del decodificador 3-to-8](images/dec3to8_rtl.png)
+
+---
+
+#### 2.2.5. Simulación en ModelSim y Análisis de Resultados
+
+> **[EVIDENCIA FOTOGRÁFICA 10: SIMULACIÓN MODELSIM DEC3TO8]**  
+> *Guarda la captura de la forma de onda de ModelSim con el nombre `reports/images/dec3to8_modelsim.png`.*
+
+![Forma de onda de la simulación del decodificador 3-to-8](images/dec3to8_modelsim.png)
+
+##### Análisis del Diagrama de Tiempos:
+1. **Inhibición Total ($t \in [0, 160)\,\text{ns}$):** Con $en = 0$, `bcode` = `"00000000"` para las 8 combinaciones de $in\_v$.
+2. **Decodificación Mitad Inferior ($t \in [160, 240)\,\text{ns}$):**
+   - $in\_v(2) = 0 \implies en_{low} = 1, en_{high} = 0$.
+   - Se activan secuencialmente las salidas $b_0, b_1, b_2, b_3$ mientras la parte alta $b_7 \dots b_4$ se mantiene en `'0'`.
+3. **Decodificación Mitad Superior ($t \in [240, 320)\,\text{ns}$):**
+   - $in\_v(2) = 1 \implies en_{low} = 0, en_{high} = 1$.
+   - Se activan secuencialmente las salidas $b_4, b_5, b_6, b_7$ mientras la parte baja $b_3 \dots b_0$ se mantiene en `'0'`.
+4. **Conclusión:** La modulación del enable mediante el bit MSB permite expandir la dimensionalidad del decodificador de forma modular y jerárquica con cero interferencia entre bancos de salida.
+
+---
