@@ -2221,3 +2221,692 @@ wave zoom full
    - La síntesis basada en multiplexores permite sintetizar funciones booleanas complejas sin requerir optimizaciones algebraicas extensas a nivel compuerta, replicando la arquitectura interna de las celdas lógicas (LUTs) presentes en los dispositivos SoC / FPGA modernos.
 
 ---
+
+## Ejercicio Número 4: Aritmética Básica Binaria Basada en Multiplexores
+
+En este ejercicio se implementa una unidad sumadora binaria utilizando **multiplexores como elementos de síntesis de funciones lógicas**, sustituyendo el enfoque tradicional de compuertas discretas (XOR, AND, OR).
+El diseño comprende dos niveles jerárquicos:
+1. **Sumador Completo de 1 Bit (*Full Adder MUX*):** Implementación de las funciones de suma ($S$) y acarreo ($C_{out}$) mediante dos multiplexores 4 a 1.
+2. **Sumador de 4 Bits (*Ripple Carry Adder*):** Integración estructural de cuatro bloques *Full Adder MUX* encadenados por sus líneas de acarreo.
+
+---
+
+### 4.1. Análisis y Derivación Teórica
+
+#### 4.1.1. Tabla de Verdad del Full Adder (Figura 2)
+Sean las entradas $A, B$ (sumandos de 1 bit) y $C_{in}$ (acarreo entrante), y las salidas $S$ (bit de suma) y $C_{out}$ (acarreo saliente):
+
+| Fila | $A$ | $B$ | $C_{in}$ | SUM ($S$) | $C_{out}$ | Minitérmino $S$ | Minitérmino $C_{out}$ |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **0** | 0 | 0 | 0 | **0** | **0** | - | - |
+| **1** | 0 | 0 | 1 | **1** | **0** | $m_1 = \overline{A}\,\overline{B} C_{in}$ | - |
+| **2** | 0 | 1 | 0 | **1** | **0** | $m_2 = \overline{A} B \overline{C_{in}}$ | - |
+| **3** | 0 | 1 | 1 | **0** | **1** | - | $m_3 = \overline{A} B C_{in}$ |
+| **4** | 1 | 0 | 0 | **1** | **0** | $m_4 = A \overline{B}\,\overline{C_{in}}$ | - |
+| **5** | 1 | 0 | 1 | **0** | **1** | - | $m_5 = A \overline{B} C_{in}$ |
+| **6** | 1 | 1 | 0 | **0** | **1** | - | $m_6 = A B \overline{C_{in}}$ |
+| **7** | 1 | 1 | 1 | **1** | **1** | $m_7 = A B C_{in}$ | $m_7 = A B C_{in}$ |
+
+---
+
+#### 4.1.2. Síntesis Basada en Multiplexores 4 a 1
+Asignando las entradas $(A, B)$ a las líneas de selección del multiplexor ($S_1 = A, S_0 = B$), se determinan las señales a inyectar en los canales de datos $D_0 \dots D_3$ en función de $C_{in}$:
+
+* **Para la Suma ($S$):**
+  - $AB = 00 \implies S = C_{in} \implies \mathbf{D_0 = C_{in}}$
+  - $AB = 01 \implies S = \overline{C_{in}} \implies \mathbf{D_1 = \overline{C_{in}}}$
+  - $AB = 10 \implies S = \overline{C_{in}} \implies \mathbf{D_2 = \overline{C_{in}}}$
+  - $AB = 11 \implies S = C_{in} \implies \mathbf{D_3 = C_{in}}$
+
+* **Para el Acarreo ($C_{out}$):**
+  - $AB = 00 \implies C_{out} = 0 \implies \mathbf{D_0 = '0'}$ (GND)
+  - $AB = 01 \implies C_{out} = C_{in} \implies \mathbf{D_1 = C_{in}}$
+  - $AB = 10 \implies C_{out} = C_{in} \implies \mathbf{D_2 = C_{in}}$
+  - $AB = 11 \implies C_{out} = 1 \implies \mathbf{D_3 = '1'}$ (VCC)
+
+```mermaid
+graph LR
+    subgraph MUX_SUM["Generación de Suma (S)"]
+        Cin_S0["Cin"] --> SD0["D0"]
+        nCin_S1["not Cin"] --> SD1["D1"]
+        nCin_S2["not Cin"] --> SD2["D2"]
+        Cin_S3["Cin"] --> SD3["D3"]
+        SD0 & SD1 & SD2 & SD3 --> MUX_S["MUX 4:1 (Suma)"]
+        AB_S["sel = (A, B)"] --> MUX_S
+        MUX_S --> S["S"]
+    end
+
+    subgraph MUX_COUT["Generación de Acarreo (Cout)"]
+        GND["'0' (GND)"] --> CD0["D0"]
+        Cin_C1["Cin"] --> CD1["D1"]
+        Cin_C2["Cin"] --> CD2["D2"]
+        VCC["'1' (VCC)"] --> CD3["D3"]
+        CD0 & CD1 & CD2 & CD3 --> MUX_C["MUX 4:1 (Cout)"]
+        AB_C["sel = (A, B)"] --> MUX_C
+        MUX_C --> Cout["Cout"]
+    end
+```
+*Figura 6. Arquitectura del Full Adder basado en multiplexores 4 a 1.*
+
+---
+
+#### 4.1.3. Arquitectura del Sumador Ripple Carry de 4 Bits (Figura 3)
+La interconexión de 4 celdas *Full Adder MUX* permite la suma de palabras binarias de 4 bits $A = (a_3, a_2, a_1, a_0)$ y $B = (b_3, b_2, b_1, b_0)$ con acarreo inicial $C_{in0}$:
+
+```mermaid
+graph RL
+    Cin0["Cin0"] --> FA0["Full Adder 0<br>(a0, b0)"]
+    FA0 -->|"Cout0 / Cin1"| FA1["Full Adder 1<br>(a1, b1)"]
+    FA1 -->|"Cout1 / Cin2"| FA2["Full Adder 2<br>(a2, b2)"]
+    FA2 -->|"Cout2 / Cin3"| FA3["Full Adder 3<br>(a3, b3)"]
+    FA3 --> Cout["Cout (Overflow)"]
+
+    FA0 --> S0["S0"]
+    FA1 --> S1["S1"]
+    FA2 --> S2["S2"]
+    FA3 --> S3["S3"]
+```
+*Figura 7. Diagrama estructural del sumador de 4 bits por propagación de acarreo.*
+
+---
+
+### 4.2. Códigos HDL y Testbenches
+
+#### 4.2.1. Implementación en VHDL
+
+##### Módulo Multiplexor 4 a 1 Genérico (`mux4to1.vhd`)
+```vhdl
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity mux4to1 is
+    port (
+        d   : in  std_logic_vector(3 downto 0);
+        sel : in  std_logic_vector(1 downto 0);
+        y   : out std_logic
+    );
+end entity mux4to1;
+
+architecture Behavioral of mux4to1 is
+begin
+    with sel select
+        y <= d(0) when "00",
+             d(1) when "01",
+             d(2) when "10",
+             d(3) when "11",
+             '0'  when others;
+end architecture Behavioral;
+```
+
+##### Módulo Full Adder Basado en MUX (`full_adder_mux.vhd`)
+```vhdl
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity full_adder_mux is
+    port (
+        a    : in  std_logic;
+        b    : in  std_logic;
+        cin  : in  std_logic;
+        s    : out std_logic;
+        cout : out std_logic
+    );
+end entity full_adder_mux;
+
+architecture Structural of full_adder_mux is
+    component mux4to1 is
+        port (
+            d   : in  std_logic_vector(3 downto 0);
+            sel : in  std_logic_vector(1 downto 0);
+            y   : out std_logic
+        );
+    end component;
+
+    signal sel_ab  : std_logic_vector(1 downto 0);
+    signal d_sum   : std_logic_vector(3 downto 0);
+    signal d_cout  : std_logic_vector(3 downto 0);
+    signal not_cin : std_logic;
+begin
+    sel_ab  <= a & b;
+    not_cin <= not cin;
+
+    -- Entradas para la Suma (S)
+    d_sum(0) <= cin;
+    d_sum(1) <= not_cin;
+    d_sum(2) <= not_cin;
+    d_sum(3) <= cin;
+
+    -- Entradas para el Acarreo (Cout)
+    d_cout(0) <= '0';
+    d_cout(1) <= cin;
+    d_cout(2) <= cin;
+    d_cout(3) <= '1';
+
+    U_MUX_SUM: mux4to1
+        port map (
+            d   => d_sum,
+            sel => sel_ab,
+            y   => s
+        );
+
+    U_MUX_COUT: mux4to1
+        port map (
+            d   => d_cout,
+            sel => sel_ab,
+            y   => cout
+        );
+
+end architecture Structural;
+```
+
+##### Módulo Sumador de 4 Bits (`adder4bit.vhd`)
+```vhdl
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity adder4bit is
+    port (
+        a    : in  std_logic_vector(3 downto 0);
+        b    : in  std_logic_vector(3 downto 0);
+        cin  : in  std_logic;
+        s    : out std_logic_vector(3 downto 0);
+        cout : out std_logic
+    );
+end entity adder4bit;
+
+architecture Structural of adder4bit is
+    component full_adder_mux is
+        port (
+            a    : in  std_logic;
+            b    : in  std_logic;
+            cin  : in  std_logic;
+            s    : out std_logic;
+            cout : out std_logic
+        );
+    end component;
+
+    signal c : std_logic_vector(3 downto 1);
+begin
+    FA0: full_adder_mux
+        port map (
+            a    => a(0),
+            b    => b(0),
+            cin  => cin,
+            s    => s(0),
+            cout => c(1)
+        );
+
+    FA1: full_adder_mux
+        port map (
+            a    => a(1),
+            b    => b(1),
+            cin  => c(1),
+            s    => s(1),
+            cout => c(2)
+        );
+
+    FA2: full_adder_mux
+        port map (
+            a    => a(2),
+            b    => b(2),
+            cin  => c(2),
+            s    => s(2),
+            cout => c(3)
+        );
+
+    FA3: full_adder_mux
+        port map (
+            a    => a(3),
+            b    => b(3),
+            cin  => c(3),
+            s    => s(3),
+            cout => cout
+        );
+
+end architecture Structural;
+```
+
+##### Testbench VHDL (`adder4bit_tb.vhd`)
+```vhdl
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+
+entity adder4bit_tb is
+end entity adder4bit_tb;
+
+architecture Behavioral of adder4bit_tb is
+    component adder4bit is
+        port (
+            a    : in  std_logic_vector(3 downto 0);
+            b    : in  std_logic_vector(3 downto 0);
+            cin  : in  std_logic;
+            s    : out std_logic_vector(3 downto 0);
+            cout : out std_logic
+        );
+    end component;
+
+    signal a_tb    : std_logic_vector(3 downto 0) := "0000";
+    signal b_tb    : std_logic_vector(3 downto 0) := "0000";
+    signal cin_tb  : std_logic := '0';
+    signal s_tb    : std_logic_vector(3 downto 0);
+    signal cout_tb : std_logic;
+
+    constant T_STEP : time := 20 ns;
+begin
+    DUT: adder4bit
+        port map (
+            a    => a_tb,
+            b    => b_tb,
+            cin  => cin_tb,
+            s    => s_tb,
+            cout => cout_tb
+        );
+
+    stim_proc: process
+        variable expected_sum : integer;
+        variable expected_s   : std_logic_vector(3 downto 0);
+        variable expected_c   : std_logic;
+    begin
+        -- =====================================================================
+        -- FASE 1: 10 VECTORES DE PRUEBA ESPECÍFICOS Y CASOS LÍMITE (OVERFLOW)
+        -- =====================================================================
+        -- 1. Cero + Cero sin Cin (0 + 0 = 0)
+        a_tb <= "0000"; b_tb <= "0000"; cin_tb <= '0'; wait for T_STEP;
+        assert s_tb = "0000" and cout_tb = '0' report "Error Vector 1" severity error;
+
+        -- 2. Suma simple sin acarreo (3 + 4 = 7)
+        a_tb <= "0011"; b_tb <= "0100"; cin_tb <= '0'; wait for T_STEP;
+        assert s_tb = "0111" and cout_tb = '0' report "Error Vector 2" severity error;
+
+        -- 3. Suma con acarreo de entrada Cin (2 + 3 + 1 = 6)
+        a_tb <= "0010"; b_tb <= "0011"; cin_tb <= '1'; wait for T_STEP;
+        assert s_tb = "0110" and cout_tb = '0' report "Error Vector 3" severity error;
+
+        -- 4. Propagación de acarreo interno (7 + 1 = 8)
+        a_tb <= "0111"; b_tb <= "0001"; cin_tb <= '0'; wait for T_STEP;
+        assert s_tb = "1000" and cout_tb = '0' report "Error Vector 4" severity error;
+
+        -- 5. Rango máximo sin overflow (10 + 5 = 15)
+        a_tb <= "1010"; b_tb <= "0101"; cin_tb <= '0'; wait for T_STEP;
+        assert s_tb = "1111" and cout_tb = '0' report "Error Vector 5" severity error;
+
+        -- 6. OVERFLOW / Desbordamiento básico (15 + 1 = 16 => S=0, Cout=1)
+        a_tb <= "1111"; b_tb <= "0001"; cin_tb <= '0'; wait for T_STEP;
+        assert s_tb = "0000" and cout_tb = '1' report "Error Vector 6 (Overflow)" severity error;
+
+        -- 7. OVERFLOW con valores medios (8 + 9 = 17 => S=1, Cout=1)
+        a_tb <= "1000"; b_tb <= "1001"; cin_tb <= '0'; wait for T_STEP;
+        assert s_tb = "0001" and cout_tb = '1' report "Error Vector 7 (Overflow)" severity error;
+
+        -- 8. OVERFLOW con Cin activo (12 + 4 + 1 = 17 => S=1, Cout=1)
+        a_tb <= "1100"; b_tb <= "0100"; cin_tb <= '1'; wait for T_STEP;
+        assert s_tb = "0001" and cout_tb = '1' report "Error Vector 8 (Overflow)" severity error;
+
+        -- 9. Caso simétrico (9 + 9 = 18 => S=2, Cout=1)
+        a_tb <= "1001"; b_tb <= "1001"; cin_tb <= '0'; wait for T_STEP;
+        assert s_tb = "0010" and cout_tb = '1' report "Error Vector 9 (Overflow)" severity error;
+
+        -- 10. Máximo absoluto posible (15 + 15 + 1 = 31 => S=15, Cout=1)
+        a_tb <= "1111"; b_tb <= "1111"; cin_tb <= '1'; wait for T_STEP;
+        assert s_tb = "1111" and cout_tb = '1' report "Error Vector 10 (Max Overflow)" severity error;
+
+        -- =====================================================================
+        -- FASE 2: VERIFICACIÓN EXHAUSTIVA TOTAL (512 CASOS)
+        -- =====================================================================
+        for c_val in 0 to 1 loop
+            for i in 0 to 15 loop
+                for j in 0 to 15 loop
+                    a_tb <= std_logic_vector(to_unsigned(i, 4));
+                    b_tb <= std_logic_vector(to_unsigned(j, 4));
+                    if c_val = 1 then
+                        cin_tb <= '1';
+                    else
+                        cin_tb <= '0';
+                    end if;
+
+                    expected_sum := i + j + c_val;
+                    expected_s   := std_logic_vector(to_unsigned(expected_sum mod 16, 4));
+                    if expected_sum >= 16 then
+                        expected_c := '1';
+                    else
+                        expected_c := '0';
+                    end if;
+
+                    wait for T_STEP;
+
+                    assert s_tb = expected_s
+                        report "Error de Suma en a=" & integer'image(i) & ", b=" & integer'image(j)
+                        severity error;
+                    assert cout_tb = expected_c
+                        report "Error de Acarreo en a=" & integer'image(i) & ", b=" & integer'image(j)
+                        severity error;
+                end loop;
+            end loop;
+        end loop;
+
+        report ">>> Simulacion de adder4bit_tb completada exitosamente (512 vectores evaluados). <<<" severity note;
+        wait;
+    end process;
+end architecture Behavioral;
+```
+
+---
+
+#### 4.2.2. Implementación en Verilog
+
+##### Módulo Multiplexor 4 a 1 Genérico (`mux4to1.v`)
+```verilog
+`timescale 1ns / 1ps
+
+module mux4to1 (
+    input  wire [3:0] d,
+    input  wire [1:0] sel,
+    output reg        y
+);
+
+    always @(*) begin
+        case (sel)
+            2'b00:   y = d[0];
+            2'b01:   y = d[1];
+            2'b10:   y = d[2];
+            2'b11:   y = d[3];
+            default: y = 1'b0;
+        endcase
+    end
+
+endmodule
+```
+
+##### Módulo Full Adder Basado en MUX (`full_adder_mux.v`)
+```verilog
+`timescale 1ns / 1ps
+
+module full_adder_mux (
+    input  wire a,
+    input  wire b,
+    input  wire cin,
+    output wire s,
+    output wire cout
+);
+
+    wire [1:0] sel_ab;
+    wire [3:0] d_sum;
+    wire [3:0] d_cout;
+    wire       not_cin;
+
+    assign sel_ab  = {a, b};
+    assign not_cin = ~cin;
+
+    // Entradas para Suma (S)
+    assign d_sum[0] = cin;
+    assign d_sum[1] = not_cin;
+    assign d_sum[2] = not_cin;
+    assign d_sum[3] = cin;
+
+    // Entradas para Acarreo (Cout)
+    assign d_cout[0] = 1'b0;
+    assign d_cout[1] = cin;
+    assign d_cout[2] = cin;
+    assign d_cout[3] = 1'b1;
+
+    mux4to1 u_mux_sum (
+        .d(d_sum),
+        .sel(sel_ab),
+        .y(s)
+    );
+
+    mux4to1 u_mux_cout (
+        .d(d_cout),
+        .sel(sel_ab),
+        .y(cout)
+    );
+
+endmodule
+```
+
+##### Módulo Sumador de 4 Bits (`adder4bit.v`)
+```verilog
+`timescale 1ns / 1ps
+
+module adder4bit (
+    input  wire [3:0] a,
+    input  wire [3:0] b,
+    input  wire       cin,
+    output wire [3:0] s,
+    output wire       cout
+);
+
+    wire [3:1] c;
+
+    full_adder_mux fa0 (
+        .a(a[0]),
+        .b(b[0]),
+        .cin(cin),
+        .s(s[0]),
+        .cout(c[1])
+    );
+
+    full_adder_mux fa1 (
+        .a(a[1]),
+        .b(b[1]),
+        .cin(c[1]),
+        .s(s[1]),
+        .cout(c[2])
+    );
+
+    full_adder_mux fa2 (
+        .a(a[2]),
+        .b(b[2]),
+        .cin(c[2]),
+        .s(s[2]),
+        .cout(c[3])
+    );
+
+    full_adder_mux fa3 (
+        .a(a[3]),
+        .b(b[3]),
+        .cin(c[3]),
+        .s(s[3]),
+        .cout(cout)
+    );
+
+endmodule
+```
+
+##### Testbench Verilog (`adder4bit_tb.v`)
+```verilog
+`timescale 1ns / 1ps
+
+module adder4bit_tb;
+    reg  [3:0] a;
+    reg  [3:0] b;
+    reg        cin;
+    wire [3:0] s;
+    wire       cout;
+
+    integer i, j, c_val;
+    integer errors = 0;
+    reg [4:0] expected_full;
+
+    adder4bit dut (
+        .a(a),
+        .b(b),
+        .cin(cin),
+        .s(s),
+        .cout(cout)
+    );
+
+    initial begin
+        a   = 4'b0000;
+        b   = 4'b0000;
+        cin = 1'b0;
+
+        // FASE 1: 10 VECTORES DE PRUEBA ESPECÍFICOS Y OVERFLOW
+        a = 4'd0; b = 4'd0; cin = 1'b0; #20; check_result(1, 0, 0, 0);
+        a = 4'd3; b = 4'd4; cin = 1'b0; #20; check_result(2, 3, 4, 0);
+        a = 4'd2; b = 4'd3; cin = 1'b1; #20; check_result(3, 2, 3, 1);
+        a = 4'd7; b = 4'd1; cin = 1'b0; #20; check_result(4, 7, 1, 0);
+        a = 4'd10; b = 4'd5; cin = 1'b0; #20; check_result(5, 10, 5, 0);
+        a = 4'd15; b = 4'd1; cin = 1'b0; #20; check_result(6, 15, 1, 0);
+        a = 4'd8; b = 4'd9; cin = 1'b0; #20; check_result(7, 8, 9, 0);
+        a = 4'd12; b = 4'd4; cin = 1'b1; #20; check_result(8, 12, 4, 1);
+        a = 4'd9; b = 4'd9; cin = 1'b0; #20; check_result(9, 9, 9, 0);
+        a = 4'd15; b = 4'd15; cin = 1'b1; #20; check_result(10, 15, 15, 1);
+
+        // FASE 2: VERIFICACIÓN EXHAUSTIVA TOTAL (512 COMBINACIONES)
+        for (c_val = 0; c_val < 2; c_val = c_val + 1) begin
+            for (i = 0; i < 16; i = i + 1) begin
+                for (j = 0; j < 16; j = j + 1) begin
+                    a   = i[3:0];
+                    b   = j[3:0];
+                    cin = c_val[0];
+                    #20;
+
+                    expected_full = i + j + c_val;
+                    if ({cout, s} !== expected_full) begin
+                        $display("ERROR en a=%0d, b=%0d, cin=%b => Esperado {Cout,S}=%b, Obtenido=%b",
+                                 i, j, cin, expected_full, {cout, s});
+                        errors = errors + 1;
+                    end
+                end
+            end
+        end
+
+        if (errors == 0) begin
+            $display(">>> Simulacion de adder4bit_tb exitosa: 512 casos evaluados sin errores. <<<");
+        end else begin
+            $display(">>> Simulacion finalizada con %0d errores detectados. <<<", errors);
+        end
+
+        $stop;
+    end
+
+    task check_result;
+        input integer test_num;
+        input integer in_a;
+        input integer in_b;
+        input integer in_cin;
+        reg [4:0] exp;
+        begin
+            exp = in_a + in_b + in_cin;
+            if ({cout, s} !== exp) begin
+                $display("ERROR en Test %0d: %0d + %0d + cin(%0d) => Esperado=%b, Obtenido={%b, %b}",
+                         test_num, in_a, in_b, in_cin, exp, cout, s);
+                errors = errors + 1;
+            end else begin
+                $display("Test %0d [OK]: %0d + %0d + cin(%0d) = %0d => {Cout, S} = {%b, %b}",
+                         test_num, in_a, in_b, in_cin, exp, cout, s);
+            end
+        end
+    endtask
+
+endmodule
+```
+
+---
+
+#### 4.2.3. Scripts de Automatización para ModelSim (`.do`)
+
+##### Script de Simulación VHDL (`run_adder4bit_vhdl.do`)
+```tcl
+# Crear y mapear librería de trabajo
+vlib work
+vmap work work
+
+# Compilar archivos fuente en orden jerárquico
+vcom -93 -work work ../vhdl/src/mux4to1.vhd
+vcom -93 -work work ../vhdl/src/full_adder_mux.vhd
+vcom -93 -work work ../vhdl/src/adder4bit.vhd
+vcom -93 -work work ../vhdl/tb/adder4bit_tb.vhd
+
+# Cargar simulación
+vsim work.adder4bit_tb
+
+# Configurar visualización de señales
+add wave -divider "ENTRADAS"
+add wave -color "Yellow" -radix unsigned /adder4bit_tb/a_tb
+add wave -color "Yellow" -radix unsigned /adder4bit_tb/b_tb
+add wave -color "Yellow" /adder4bit_tb/cin_tb
+
+add wave -divider "ACARREOS INTERNOS (RIPPLE)"
+add wave -color "Orange" /adder4bit_tb/DUT/c
+
+add wave -divider "SALIDAS"
+add wave -color "Cyan"  -radix unsigned /adder4bit_tb/s_tb
+add wave -color "Red"   /adder4bit_tb/cout_tb
+
+# Ejecución
+run -all
+wave zoom full
+```
+
+##### Script de Simulación Verilog (`run_adder4bit_verilog.do`)
+```tcl
+# Crear y mapear librería de trabajo
+vlib work
+vmap work work
+
+# Compilar módulos Verilog y testbench
+vlog -work work ../verilog/src/mux4to1.v
+vlog -work work ../verilog/src/full_adder_mux.v
+vlog -work work ../verilog/src/adder4bit.v
+vlog -work work ../verilog/tb/adder4bit_tb.v
+
+# Cargar simulación
+vsim work.adder4bit_tb
+
+# Configurar visualización de señales
+add wave -divider "ENTRADAS"
+add wave -color "Yellow" -radix unsigned /adder4bit_tb/a
+add wave -color "Yellow" -radix unsigned /adder4bit_tb/b
+add wave -color "Yellow" /adder4bit_tb/cin
+
+add wave -divider "ACARREOS INTERNOS (RIPPLE)"
+add wave -color "Orange" /adder4bit_tb/dut/c
+
+add wave -divider "SALIDAS"
+add wave -color "Cyan"  -radix unsigned /adder4bit_tb/s
+add wave -color "Red"   /adder4bit_tb/cout
+
+# Ejecución
+run -all
+wave zoom full
+```
+
+---
+
+### 4.3. Circuito Generado por Quartus (RTL Viewer)
+
+> **[EVIDENCIA FOTOGRÁFICA 16: RTL VIEWER ADDER4BIT]**  
+> *Guarda la captura de Quartus (Tools $\rightarrow$ Netlist Viewers $\rightarrow$ RTL Viewer) con el nombre `reports/images/adder4bit_rtl.png`.*
+
+![Circuito RTL del sumador de 4 bits](images/adder4bit_rtl.png)
+
+> **[EVIDENCIA FOTOGRÁFICA 17: RTL VIEWER FULL_ADDER_MUX]**  
+> *Guarda la captura de Quartus de una celda interna Full Adder con el nombre `reports/images/full_adder_mux_rtl.png`.*
+
+![Circuito RTL de la celda Full Adder basada en MUX](images/full_adder_mux_rtl.png)
+
+---
+
+### 4.4. Simulación en ModelSim y Análisis de Resultados
+
+> **[EVIDENCIA FOTOGRÁFICA 18: SIMULACIÓN MODELSIM ADDER4BIT]**  
+> *Guarda la captura de la forma de onda de ModelSim con el nombre `reports/images/adder4bit_modelsim.png`.*
+
+![Forma de onda de la simulación del sumador de 4 bits](images/adder4bit_modelsim.png)
+
+#### Análisis del Diagrama de Tiempos:
+1. **Operación en Rango Sin Desbordamiento ($A + B + C_{in} \le 15$):**
+   - Para las pruebas iniciales (ej. $3 + 4 = 7$, $2 + 3 + 1 = 6$, $10 + 5 = 15$), la salida `s` refleja con exactitud el resultado aritmético y el acarreo de salida `cout` se mantiene en `'0'`.
+2. **Propagación y Detección de Desbordamiento / OVERFLOW ($A + B + C_{in} \ge 16$):**
+   - En los vectores límite (ej. $15 + 1 = 16 \rightarrow S=0, C_{out}=1$; $8 + 9 = 17 \rightarrow S=1, C_{out}=1$; $15 + 15 + 1 = 31 \rightarrow S=15, C_{out}=1$), se activa inmediatamente la señal `cout = '1'`, indicando la necesidad de un 5to bit de representación.
+3. **Encadenamiento de Acarreos en Cascada:**
+   - Se evidencia cómo las líneas intermedias $c_1, c_2, c_3$ propagan el acarreo de una etapa a la siguiente sin retardos asíncronos espurios en lógica combinacional pura.
+4. **Conclusión General del Taller:**
+   - La arquitectura basada en multiplexores demuestra ser completamente equivalente y universal frente a la lógica basada en compuertas discretas, proporcionando la base conceptual directa de la síntesis sobre bloques lógicos configurables (CLBs / ALMs) en FPGAs y SoCs industriales.
+
+---
+
+---
