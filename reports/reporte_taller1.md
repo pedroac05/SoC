@@ -1588,3 +1588,636 @@ endmodule
 3. **Conclusión:** La estructura modular de 2 niveles implementa fielmente la tabla de verdad del decodificador 4-to-16 maximizando la reutilización del diseño y simplificando el árbol de enrutamiento en FPGA.
 
 ---
+
+## Ejercicio Número 3: Diseño Lógico Basado en Multiplexores
+
+En este ejercicio se implementa una función lógica combinacional de 4 variables de entrada ($x_1, x_2, x_3, x_4$) a través de dos metodologías de diseño digital:
+1. **Implementación Directa a Nivel Compuertas (*Gate-Level*):** Red pura de 3 compuertas XNOR.
+2. **Implementación Basada en Multiplexores (*MUX-Based*):** Uso de un multiplexor 4 a 1 aplicando descomposición funcional / partición de Shannon.
+
+Ambas descripciones se comparan simultáneamente en un módulo integrador (*Top-Level*) y se verifica su equivalencia lógica exhaustiva mediante bancos de prueba (*Testbenches*) en VHDL y Verilog.
+
+---
+
+### 3.1. Análisis y Derivación Teórica
+
+#### 3.1.1. Ecuación Lógica a Nivel Compuertas
+A partir de la topología de la Figura 1 (red jerárquica de compuertas XNOR de 2 niveles):
+- Nivel 1:
+  $$G_1 = x_1 \odot x_2 = \overline{x_1 \oplus x_2} = x_1 x_2 + \overline{x_1}\,\overline{x_2}$$
+  $$G_2 = x_3 \odot x_4 = \overline{x_3 \oplus x_4} = x_3 x_4 + \overline{x_3}\,\overline{x_4}$$
+- Nivel 2:
+  $$f = G_1 \odot G_2 = \overline{G_1 \oplus G_2}$$
+
+Empleando la identidad del álgebra booleana $\overline{A} \oplus \overline{B} = A \oplus B$:
+$$f(x_1, x_2, x_3, x_4) = \overline{(x_1 \oplus x_2) \oplus (x_3 \oplus x_4)} = \overline{x_1 \oplus x_2 \oplus x_3 \oplus x_4}$$
+
+La función obtenida corresponde a un **detector de paridad par (*Even Parity*)**: la salida $f$ toma el valor lógico `'1'` si y sólo si el número total de bits en `'1'` entre las cuatro entradas es **par** ($0, 2 \text{ ó } 4$).
+
+---
+
+#### 3.1.2. Tabla de Verdad y Minitérminos Canónicos
+
+| Fila | $x_1$ | $x_2$ | $x_3$ | $x_4$ | $G_1 = x_1 \odot x_2$ | $G_2 = x_3 \odot x_4$ | Paridad de 1s | Salida $f$ | Minitérmino |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **0**  | 0 | 0 | 0 | 0 | 1 | 1 | 0 (Par)  | **1** | $m_0 = \overline{x_1}\,\overline{x_2}\,\overline{x_3}\,\overline{x_4}$ |
+| **1**  | 0 | 0 | 0 | 1 | 1 | 0 | 1 (Impar)| **0** | - |
+| **2**  | 0 | 0 | 1 | 0 | 1 | 0 | 1 (Impar)| **0** | - |
+| **3**  | 0 | 0 | 1 | 1 | 1 | 1 | 2 (Par)  | **1** | $m_3 = \overline{x_1}\,\overline{x_2} x_3 x_4$ |
+| **4**  | 0 | 1 | 0 | 0 | 0 | 1 | 1 (Impar)| **0** | - |
+| **5**  | 0 | 1 | 0 | 1 | 0 | 0 | 2 (Par)  | **1** | $m_5 = \overline{x_1} x_2 \overline{x_3} x_4$ |
+| **6**  | 0 | 1 | 1 | 0 | 0 | 0 | 2 (Par)  | **1** | $m_6 = \overline{x_1} x_2 x_3 \overline{x_4}$ |
+| **7**  | 0 | 1 | 1 | 1 | 0 | 1 | 3 (Impar)| **0** | - |
+| **8**  | 1 | 0 | 0 | 0 | 0 | 1 | 1 (Impar)| **0** | - |
+| **9**  | 1 | 0 | 0 | 1 | 0 | 0 | 2 (Par)  | **1** | $m_9 = x_1 \overline{x_2}\,\overline{x_3} x_4$ |
+| **10** | 1 | 0 | 1 | 0 | 0 | 0 | 2 (Par)  | **1** | $m_{10} = x_1 \overline{x_2} x_3 \overline{x_4}$ |
+| **11** | 1 | 0 | 1 | 1 | 0 | 1 | 3 (Impar)| **0** | - |
+| **12** | 1 | 1 | 0 | 0 | 1 | 1 | 2 (Par)  | **1** | $m_{12} = x_1 x_2 \overline{x_3}\,\overline{x_4}$ |
+| **13** | 1 | 1 | 0 | 1 | 1 | 0 | 3 (Impar)| **0** | - |
+| **14** | 1 | 1 | 1 | 0 | 1 | 0 | 3 (Impar)| **0** | - |
+| **15** | 1 | 1 | 1 | 1 | 1 | 1 | 4 (Par)  | **1** | $m_{15} = x_1 x_2 x_3 x_4$ |
+
+**Suma Canónica de Productos:**
+$$f(x_1, x_2, x_3, x_4) = \sum m(0, 3, 5, 6, 9, 10, 12, 15)$$
+
+---
+
+#### 3.1.3. Descomposición Funcional con Multiplexor 4 a 1 (Shannon)
+
+Seleccionando las dos variables más significativas $(x_1, x_2)$ como líneas de selección del multiplexor ($S_1 = x_1$, $S_0 = x_2$), el espacio booleano se particiona en 4 cuadrantes respecto a $(x_3, x_4)$:
+
+```mermaid
+graph LR
+    subgraph Generacion_Datos["Entradas a canales de datos"]
+        X34_XNOR["x3 XNOR x4"] --> D0["D0"]
+        X34_XOR["x3 XOR x4"] --> D1["D1"]
+        X34_XOR --> D2["D2"]
+        X34_XNOR --> D3["D3"]
+    end
+
+    D0 --> MUX["MUX 4 a 1<br>(mux4to1)"]
+    D1 --> MUX
+    D2 --> MUX
+    D3 --> MUX
+
+    SEL["Selectores: (x1, x2)"] --> MUX
+    MUX --> F["f"]
+```
+*Figura 5. Arquitectura lógica del circuito basado en multiplexor 4 a 1.*
+
+* **Canal $D_0$ ($x_1 x_2 = 00$):**
+  $$f|_{00} = \overline{x_3}\,\overline{x_4} + x_3 x_4 = x_3 \odot x_4 \quad (\text{XNOR})$$
+* **Canal $D_1$ ($x_1 x_2 = 01$):**
+  $$f|_{01} = \overline{x_3} x_4 + x_3 \overline{x_4} = x_3 \oplus x_4 \quad (\text{XOR})$$
+* **Canal $D_2$ ($x_1 x_2 = 10$):**
+  $$f|_{10} = \overline{x_3} x_4 + x_3 \overline{x_4} = x_3 \oplus x_4 \quad (\text{XOR})$$
+* **Canal $D_3$ ($x_1 x_2 = 11$):**
+  $$f|_{11} = \overline{x_3}\,\overline{x_4} + x_3 x_4 = x_3 \odot x_4 \quad (\text{XNOR})$$
+
+---
+
+### 3.2. Códigos HDL y Testbenches
+
+#### 3.2.1. Implementación en VHDL
+
+##### Módulo Gate-Level (`mux_logic_gate.vhd`)
+```vhdl
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity mux_logic_gate is
+    port (
+        x1 : in  std_logic;
+        x2 : in  std_logic;
+        x3 : in  std_logic;
+        x4 : in  std_logic;
+        f  : out std_logic
+    );
+end entity mux_logic_gate;
+
+architecture GateLevel of mux_logic_gate is
+    signal g1 : std_logic;
+    signal g2 : std_logic;
+begin
+    -- Implementación directa a nivel compuertas (Figura 1: 3 compuertas XNOR)
+    g1 <= x1 xnor x2;
+    g2 <= x3 xnor x4;
+    f  <= g1 xnor g2;
+end architecture GateLevel;
+```
+
+##### Módulo Multiplexor 4 a 1 Genérico (`mux4to1.vhd`)
+```vhdl
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity mux4to1 is
+    port (
+        d   : in  std_logic_vector(3 downto 0);
+        sel : in  std_logic_vector(1 downto 0);
+        y   : out std_logic
+    );
+end entity mux4to1;
+
+architecture Behavioral of mux4to1 is
+begin
+    with sel select
+        y <= d(0) when "00",
+             d(1) when "01",
+             d(2) when "10",
+             d(3) when "11",
+             '0'  when others;
+end architecture Behavioral;
+```
+
+##### Módulo Basado en Multiplexor (`mux_logic_mux.vhd`)
+```vhdl
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity mux_logic_mux is
+    port (
+        x1 : in  std_logic;
+        x2 : in  std_logic;
+        x3 : in  std_logic;
+        x4 : in  std_logic;
+        f  : out std_logic
+    );
+end entity mux_logic_mux;
+
+architecture Structural of mux_logic_mux is
+    component mux4to1 is
+        port (
+            d   : in  std_logic_vector(3 downto 0);
+            sel : in  std_logic_vector(1 downto 0);
+            y   : out std_logic
+        );
+    end component;
+
+    signal d_bus   : std_logic_vector(3 downto 0);
+    signal sel_bus : std_logic_vector(1 downto 0);
+begin
+    -- Selectores: x1 (MSB) y x2 (LSB)
+    sel_bus <= x1 & x2;
+
+    -- Entradas de datos derivadas por partición de Shannon:
+    d_bus(0) <= x3 xnor x4;
+    d_bus(1) <= x3 xor x4;
+    d_bus(2) <= x3 xor x4;
+    d_bus(3) <= x3 xnor x4;
+
+    U_MUX: mux4to1
+        port map (
+            d   => d_bus,
+            sel => sel_bus,
+            y   => f
+        );
+
+end architecture Structural;
+```
+
+##### Módulo Top Comparador (`mux_logic_top.vhd`)
+```vhdl
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity mux_logic_top is
+    port (
+        x1        : in  std_logic;
+        x2        : in  std_logic;
+        x3        : in  std_logic;
+        x4        : in  std_logic;
+        f_gate    : out std_logic;
+        f_mux     : out std_logic;
+        match_out : out std_logic
+    );
+end entity mux_logic_top;
+
+architecture Structural of mux_logic_top is
+    component mux_logic_gate is
+        port (
+            x1 : in  std_logic;
+            x2 : in  std_logic;
+            x3 : in  std_logic;
+            x4 : in  std_logic;
+            f  : out std_logic
+        );
+    end component;
+
+    component mux_logic_mux is
+        port (
+            x1 : in  std_logic;
+            x2 : in  std_logic;
+            x3 : in  std_logic;
+            x4 : in  std_logic;
+            f  : out std_logic
+        );
+    end component;
+
+    signal sig_f_gate : std_logic;
+    signal sig_f_mux  : std_logic;
+begin
+    U_GATE: mux_logic_gate
+        port map (
+            x1 => x1,
+            x2 => x2,
+            x3 => x3,
+            x4 => x4,
+            f  => sig_f_gate
+        );
+
+    U_MUX_IMPL: mux_logic_mux
+        port map (
+            x1 => x1,
+            x2 => x2,
+            x3 => x3,
+            x4 => x4,
+            f  => sig_f_mux
+        );
+
+    f_gate    <= sig_f_gate;
+    f_mux     <= sig_f_mux;
+    match_out <= sig_f_gate xnor sig_f_mux;
+
+end architecture Structural;
+```
+
+##### Testbench VHDL (`mux_logic_tb.vhd`)
+```vhdl
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+
+entity mux_logic_tb is
+end entity mux_logic_tb;
+
+architecture Behavioral of mux_logic_tb is
+    component mux_logic_top is
+        port (
+            x1        : in  std_logic;
+            x2        : in  std_logic;
+            x3        : in  std_logic;
+            x4        : in  std_logic;
+            f_gate    : out std_logic;
+            f_mux     : out std_logic;
+            match_out : out std_logic
+        );
+    end component;
+
+    signal x1_tb        : std_logic := '0';
+    signal x2_tb        : std_logic := '0';
+    signal x3_tb        : std_logic := '0';
+    signal x4_tb        : std_logic := '0';
+    signal f_gate_tb    : std_logic;
+    signal f_mux_tb     : std_logic;
+    signal match_out_tb : std_logic;
+
+    constant T_STEP : time := 20 ns;
+begin
+    DUT: mux_logic_top
+        port map (
+            x1        => x1_tb,
+            x2        => x2_tb,
+            x3        => x3_tb,
+            x4        => x4_tb,
+            f_gate    => f_gate_tb,
+            f_mux     => f_mux_tb,
+            match_out => match_out_tb
+        );
+
+    stim_proc: process
+        variable vec_in       : std_logic_vector(3 downto 0);
+        variable count_ones   : integer;
+        variable expected_val : std_logic;
+    begin
+        for i in 0 to 15 loop
+            vec_in  := std_logic_vector(to_unsigned(i, 4));
+            x1_tb   <= vec_in(3);
+            x2_tb   <= vec_in(2);
+            x3_tb   <= vec_in(1);
+            x4_tb   <= vec_in(0);
+
+            count_ones := 0;
+            for k in 0 to 3 loop
+                if vec_in(k) = '1' then
+                    count_ones := count_ones + 1;
+                end if;
+            end loop;
+
+            if (count_ones mod 2) = 0 then
+                expected_val := '1';
+            else
+                expected_val := '0';
+            end if;
+
+            wait for T_STEP;
+
+            assert f_gate_tb = expected_val
+                report "ERROR en f_gate para vector " & integer'image(i)
+                severity error;
+
+            assert f_mux_tb = expected_val
+                report "ERROR en f_mux para vector " & integer'image(i)
+                severity error;
+
+            assert match_out_tb = '1'
+                report "DESAJUSTE entre f_gate y f_mux en vector " & integer'image(i)
+                severity error;
+        end loop;
+
+        report ">>> Simulacion exhaustiva de mux_logic_tb (16 vectores) completada exitosamente. <<<" severity note;
+        wait;
+    end process;
+end architecture Behavioral;
+```
+
+---
+
+#### 3.2.2. Implementación en Verilog
+
+##### Módulo Gate-Level (`mux_logic_gate.v`)
+```verilog
+`timescale 1ns / 1ps
+
+module mux_logic_gate (
+    input  wire x1,
+    input  wire x2,
+    input  wire x3,
+    input  wire x4,
+    output wire f
+);
+
+    wire g1;
+    wire g2;
+
+    // Implementación directa a nivel compuertas (3 XNOR)
+    assign g1 = ~(x1 ^ x2);
+    assign g2 = ~(x3 ^ x4);
+    assign f  = ~(g1 ^ g2);
+
+endmodule
+```
+
+##### Módulo Multiplexor 4 a 1 Genérico (`mux4to1.v`)
+```verilog
+`timescale 1ns / 1ps
+
+module mux4to1 (
+    input  wire [3:0] d,
+    input  wire [1:0] sel,
+    output reg        y
+);
+
+    always @(*) begin
+        case (sel)
+            2'b00:   y = d[0];
+            2'b01:   y = d[1];
+            2'b10:   y = d[2];
+            2'b11:   y = d[3];
+            default: y = 1'b0;
+        endcase
+    end
+
+endmodule
+```
+
+##### Módulo Basado en Multiplexor (`mux_logic_mux.v`)
+```verilog
+`timescale 1ns / 1ps
+
+module mux_logic_mux (
+    input  wire x1,
+    input  wire x2,
+    input  wire x3,
+    input  wire x4,
+    output wire f
+);
+
+    wire [3:0] d_bus;
+    wire [1:0] sel_bus;
+
+    assign sel_bus = {x1, x2};
+
+    // Entradas de datos derivadas por partición de Shannon:
+    assign d_bus[0] = ~(x3 ^ x4);
+    assign d_bus[1] = x3 ^ x4;
+    assign d_bus[2] = x3 ^ x4;
+    assign d_bus[3] = ~(x3 ^ x4);
+
+    mux4to1 u_mux (
+        .d(d_bus),
+        .sel(sel_bus),
+        .y(f)
+    );
+
+endmodule
+```
+
+##### Módulo Top Comparador (`mux_logic_top.v`)
+```verilog
+`timescale 1ns / 1ps
+
+module mux_logic_top (
+    input  wire x1,
+    input  wire x2,
+    input  wire x3,
+    input  wire x4,
+    output wire f_gate,
+    output wire f_mux,
+    output wire match_out
+);
+
+    mux_logic_gate u_gate (
+        .x1(x1),
+        .x2(x2),
+        .x3(x3),
+        .x4(x4),
+        .f(f_gate)
+    );
+
+    mux_logic_mux u_mux_impl (
+        .x1(x1),
+        .x2(x2),
+        .x3(x3),
+        .x4(x4),
+        .f(f_mux)
+    );
+
+    assign match_out = ~(f_gate ^ f_mux);
+
+endmodule
+```
+
+##### Testbench Verilog (`mux_logic_tb.v`)
+```verilog
+`timescale 1ns / 1ps
+
+module mux_logic_tb;
+    reg  x1;
+    reg  x2;
+    reg  x3;
+    reg  x4;
+    wire f_gate;
+    wire f_mux;
+    wire match_out;
+
+    integer i;
+    integer errors = 0;
+    reg [3:0] vec_in;
+    reg       expected_val;
+
+    mux_logic_top dut (
+        .x1(x1),
+        .x2(x2),
+        .x3(x3),
+        .x4(x4),
+        .f_gate(f_gate),
+        .f_mux(f_mux),
+        .match_out(match_out)
+    );
+
+    initial begin
+        x1 = 1'b0;
+        x2 = 1'b0;
+        x3 = 1'b0;
+        x4 = 1'b0;
+
+        for (i = 0; i < 16; i = i + 1) begin
+            vec_in = i[3:0];
+            x1 = vec_in[3];
+            x2 = vec_in[2];
+            x3 = vec_in[1];
+            x4 = vec_in[0];
+
+            expected_val = ~^{x1, x2, x3, x4};
+            #20;
+
+            if (f_gate !== expected_val || f_mux !== expected_val || match_out !== 1'b1) begin
+                $display("ERROR en Vector=%b => f_gate=%b, f_mux=%b, match=%b", vec_in, f_gate, f_mux, match_out);
+                errors = errors + 1;
+            end
+        end
+
+        if (errors == 0) begin
+            $display(">>> Simulacion de mux_logic_tb exitosa: 16 vectores evaluados sin errores. <<<");
+            $display(">>> Coincidencia total del 100%% entre Gate-Level y MUX-Based. <<<");
+        end else begin
+            $display(">>> Simulacion finalizada con %0d errores. <<<", errors);
+        end
+
+        $stop;
+    end
+endmodule
+```
+
+---
+
+#### 3.2.3. Scripts de Automatización para ModelSim (`.do`)
+
+##### Script de Simulación VHDL (`run_mux_logic_vhdl.do`)
+```tcl
+# Crear y mapear librería de trabajo
+vlib work
+vmap work work
+
+# Compilar archivos fuente en orden jerárquico
+vcom -93 -work work ../vhdl/src/mux_logic_gate.vhd
+vcom -93 -work work ../vhdl/src/mux4to1.vhd
+vcom -93 -work work ../vhdl/src/mux_logic_mux.vhd
+vcom -93 -work work ../vhdl/src/mux_logic_top.vhd
+vcom -93 -work work ../vhdl/tb/mux_logic_tb.vhd
+
+# Cargar simulación
+vsim work.mux_logic_tb
+
+# Configuración de ondas
+add wave -divider "ENTRADAS"
+add wave -color "Yellow" /mux_logic_tb/x1_tb
+add wave -color "Yellow" /mux_logic_tb/x2_tb
+add wave -color "Yellow" /mux_logic_tb/x3_tb
+add wave -color "Yellow" /mux_logic_tb/x4_tb
+
+add wave -divider "INTERNAS MUX"
+add wave -color "Orange" -radix binary /mux_logic_tb/DUT/U_MUX_IMPL/sel_bus
+add wave -color "Orange" -radix binary /mux_logic_tb/DUT/U_MUX_IMPL/d_bus
+
+add wave -divider "SALIDAS COMPARATIVAS"
+add wave -color "Cyan"  /mux_logic_tb/f_gate_tb
+add wave -color "Green" /mux_logic_tb/f_mux_tb
+add wave -color "White" /mux_logic_tb/match_out_tb
+
+# Ejecución
+run -all
+wave zoom full
+```
+
+##### Script de Simulación Verilog (`run_mux_logic_verilog.do`)
+```tcl
+# Crear y mapear librería de trabajo
+vlib work
+vmap work work
+
+# Compilar módulos Verilog y testbench
+vlog -work work ../verilog/src/mux_logic_gate.v
+vlog -work work ../verilog/src/mux4to1.v
+vlog -work work ../verilog/src/mux_logic_mux.v
+vlog -work work ../verilog/src/mux_logic_top.v
+vlog -work work ../verilog/tb/mux_logic_tb.v
+
+# Cargar simulación
+vsim work.mux_logic_tb
+
+# Configuración de ondas
+add wave -divider "ENTRADAS"
+add wave -color "Yellow" /mux_logic_tb/x1
+add wave -color "Yellow" /mux_logic_tb/x2
+add wave -color "Yellow" /mux_logic_tb/x3
+add wave -color "Yellow" /mux_logic_tb/x4
+
+add wave -divider "INTERNAS MUX"
+add wave -color "Orange" -radix binary /mux_logic_tb/dut/u_mux_impl/sel_bus
+add wave -color "Orange" -radix binary /mux_logic_tb/dut/u_mux_impl/d_bus
+
+add wave -divider "SALIDAS COMPARATIVAS"
+add wave -color "Cyan"  /mux_logic_tb/f_gate
+add wave -color "Green" /mux_logic_tb/f_mux
+add wave -color "White" /mux_logic_tb/match_out
+
+# Ejecución
+run -all
+wave zoom full
+```
+
+---
+
+### 3.3. Circuito Generado por Quartus (RTL Viewer)
+
+> **[EVIDENCIA FOTOGRÁFICA 13: RTL VIEWER MUX_LOGIC_TOP]**  
+> *Guarda la captura de Quartus (Tools $\rightarrow$ Netlist Viewers $\rightarrow$ RTL Viewer) con el nombre `reports/images/mux_logic_top_rtl.png`.*
+
+![Circuito RTL del módulo top comparador](images/mux_logic_top_rtl.png)
+
+> **[EVIDENCIA FOTOGRÁFICA 14: RTL VIEWER MUX_LOGIC_MUX]**  
+> *Guarda la captura de Quartus del bloque basado en multiplexores con el nombre `reports/images/mux_logic_mux_rtl.png`.*
+
+![Circuito RTL de la implementación basada en multiplexor](images/mux_logic_mux_rtl.png)
+
+---
+
+### 3.4. Simulación en ModelSim y Análisis de Resultados
+
+> **[EVIDENCIA FOTOGRÁFICA 15: SIMULACIÓN MODELSIM MUX_LOGIC]**  
+> *Guarda la captura de la forma de onda de ModelSim con el nombre `reports/images/mux_logic_modelsim.png`.*
+
+![Forma de onda de la simulación comparativa Gate-Level vs MUX](images/mux_logic_modelsim.png)
+
+#### Análisis del Diagrama de Tiempos:
+1. **Verificación de Paridad Par:**
+   - Para las combinaciones con número par de unos ($0000_2, 0011_2, 0101_2, 0110_2, 1001_2, 1010_2, 1100_2, 1111_2$), tanto `f_gate` como `f_mux` conmutan a nivel alto (`'1'`).
+   - Para todas las demás 8 combinaciones (número impar de unos), ambas salidas se mantienen en nivel bajo (`'0'`).
+2. **Coincidencia Total (`match_out = '1'`):**
+   - La señal de control `match_out` permanece ininterrumpidamente en `'1'` durante los $320\,\text{ns}$ de la simulación, demostrando formalmente que la arquitectura basada en MUX 4:1 es lógicamente idéntica a la red de compuertas XNOR original.
+3. **Conclusiones del Ejercicio:**
+   - La síntesis basada en multiplexores permite sintetizar funciones booleanas complejas sin requerir optimizaciones algebraicas extensas a nivel compuerta, replicando la arquitectura interna de las celdas lógicas (LUTs) presentes en los dispositivos SoC / FPGA modernos.
+
+---

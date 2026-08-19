@@ -56,11 +56,11 @@ Un decodificador binario $n$-to-$2^n$ pone en `'1'` solamente uno de los $2^n$ b
 
 ```mermaid
 graph LR
-    x1["x1"] --> G1["AND"]
-    x2["x2 (not)"] --> G1
-    x3["x3"] --> G2["AND"]
-    x4["x4 (not)"] --> G2
-    G1 --> G3["NOR / Combinada"]
+    x1["x1"] --> G1["XNOR"]
+    x2["x2"] --> G1
+    x3["x3"] --> G2["XNOR"]
+    x4["x4"] --> G2
+    G1 --> G3["XNOR"]
     G2 --> G3
     G3 --> f["f"]
 ```
