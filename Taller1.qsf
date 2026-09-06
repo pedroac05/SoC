@@ -38,7 +38,7 @@
 
 set_global_assignment -name FAMILY "Cyclone V"
 set_global_assignment -name DEVICE 5CSEMA5F31C6
-set_global_assignment -name TOP_LEVEL_ENTITY mux4to1
+set_global_assignment -name TOP_LEVEL_ENTITY full_adder_mux
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION "13.0 SP1"
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "19:51:00  AUGUST 16, 2026"
 set_global_assignment -name LAST_QUARTUS_VERSION "13.0 SP1"
@@ -76,7 +76,6 @@ set_global_assignment -name VHDL_FILE ej3_mux_logic/vhdl/src/mux4to1.vhd
 set_global_assignment -name VHDL_FILE ej3_mux_logic/vhdl/src/mux_logic_mux.vhd
 set_global_assignment -name VHDL_FILE ej3_mux_logic/vhdl/src/mux_logic_top.vhd
 set_global_assignment -name VHDL_FILE ej3_mux_logic/vhdl/tb/mux_logic_tb.vhd
-set_global_assignment -name VHDL_FILE ej4_arithmetic/vhdl/src/mux4to1.vhd
 set_global_assignment -name VHDL_FILE ej4_arithmetic/vhdl/src/full_adder_mux.vhd
 set_global_assignment -name VHDL_FILE ej4_arithmetic/vhdl/src/adder4bit.vhd
 set_global_assignment -name VHDL_FILE ej4_arithmetic/vhdl/tb/adder4bit_tb.vhd

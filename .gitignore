@@ -21,6 +21,7 @@ transcript
 *.wlf
 vsim.wlf
 *.log
+modelsim.ini
 
 # OS & Editor files
 .vscode/
