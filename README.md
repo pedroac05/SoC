@@ -1,46 +1,59 @@
-# Taller de Diseño: Gate-Level y RTL-Multiplexores
-**System on Chip (SoC) - Pontificia Universidad Javeriana**
+# Talleres de Diseño Digital y SoC
+**System on Chip (SoC) - Pontificia Universidad Javeriana**  
+**Departamento de Electrónica**
 
-Este repositorio contiene el desarrollo, simulaciones en VHDL y Verilog, y reportes del taller de diseño digital.
+Este repositorio contiene el desarrollo completo, códigos fuente en **VHDL** y **Verilog**, bancos de prueba (*testbenches*), scripts de automatización de simulación para **ModelSim**, proyectos de **Quartus Prime** y reportes técnicos detallados organizados modularmente por talleres.
 
 ---
 
-## 📁 Estructura del Proyecto
+## 📁 Estructura del Repositorio
 
 ```text
 SoC/
-├── reports/                          # Documentación, enunciados y reporte del taller
-│   ├── enunciado_taller.md           # Enunciado oficial del taller
-│   ├── reporte_taller1.md            # Reporte técnico consolidado
-│   └── images/                       # Capturas de RTL Viewer y formas de onda ModelSim
+├── .gitignore
+├── README.md
 │
-├── ej1_greater_than/                 # Ejercicio 1: Circuito Greater-Than (2 bits y 4 bits)
-│   ├── vhdl/
-│   │   ├── src/                      # gt2.vhd, eq2.vhd, gt4.vhd
-│   │   └── tb/                       # gt2_tb.vhd, gt4_tb.vhd
-│   ├── verilog/
-│   │   ├── src/                      # gt2.v, eq2.v, gt4.v
-│   │   └── tb/                       # gt2_tb.v, gt4_tb.v
-│   └── sim/                          # Scripts de simulación ModelSim (.do)
+├── Taller1/                                  # Taller 1: Gate-Level y RTL-Multiplexores
+│   ├── Taller1.qpf                           # Proyecto Quartus Prime
+│   ├── Taller1.qsf                           # Configuraciones y asignaciones Quartus
+│   ├── ej1_greater_than/                     # Comparador Greater-Than (2 y 4 bits) y Eq (2 bits)
+│   │   ├── vhdl/ (src/, tb/)
+│   │   ├── verilog/ (src/, tb/)
+│   │   └── sim/                              # Scripts de simulación ModelSim (.do)
+│   ├── ej2_decoders/                         # Decodificadores Binarios (2:4, 3:8, 4:16)
+│   ├── ej3_mux_logic/                        # Síntesis con Multiplexores vs Compuertas
+│   └── ej4_arithmetic/                       # Full Adder y Sumador Ripple Carry de 4 bits con MUX
 │
-├── ej2_decoders/                     # Ejercicio 2: Decodificadores Binarios (2-to-4, 3-to-8, 4-to-16)
-│   ├── vhdl/ (src/, tb/)
-│   ├── verilog/ (src/, tb/)
-│   └── sim/
+├── Taller2/                                  # Taller 2: Circuitos Combinacionales a Nivel RTL
+│   ├── Taller2.qpf                           # Proyecto Quartus Prime
+│   ├── Taller2.qsf                           # Configuraciones y asignaciones Quartus
+│   ├── ej1_gray_code/                        # Codificador Binario a Gray de 4 bits
+│   │   ├── vhdl/ (src/, tb/)
+│   │   ├── verilog/ (src/, tb/)
+│   │   └── sim/
+│   ├── ej2_barrel_shifter/                   # Barrel Shifter (1 bit y multietapa 0-7 bits)
+│   │   ├── vhdl/ (src/, tb/)
+│   │   ├── verilog/ (src/, tb/)
+│   │   └── sim/
+│   └── ej3_comparator_signed/                # Comparador de Magnitud Signed / Unsigned
+│       ├── vhdl/ (src/, tb/)
+│       ├── verilog/ (src/, tb/)
+│       └── sim/
 │
-├── ej3_mux_logic/                    # Ejercicio 3: Función Lógica con MUX vs Gate-Level
-│   ├── vhdl/ (src/, tb/)
-│   ├── verilog/ (src/, tb/)
-│   └── sim/
-│
-└── ej4_arithmetic/                   # Ejercicio 4: Aritmética Binaria (Full Adder Mux y Ripple Carry Adder 4 bits)
-    ├── vhdl/ (src/, tb/)
-    ├── verilog/ (src/, tb/)
-    └── sim/
+└── reports/                                  # Documentación técnica, enunciados y reportes
+    ├── Taller1/
+    │   ├── enunciado_taller1.md              # Enunciado del Taller 1
+    │   ├── reporte_taller1.md                # Reporte técnico consolidado (con 18 evidencias)
+    │   └── images/                           # Capturas RTL Viewer y formas de onda ModelSim
+    │
+    └── Taller2/
+        ├── enunciado_taller2.md              # Enunciado transcrito con tablas y diagramas
+        ├── reporte_taller2.md                # Reporte técnico en desarrollo
+        └── images/                           # Carpeta de capturas para evidencias fotográficas
 ```
 
 ---
 
-## 🛠️ Herramientas
-- **Quartus Prime Lite**: Síntesis y análisis RTL.
-- **ModelSim / QuestaSim**: Simulación funcional y verificación de testbenches.
+## 🛠️ Herramientas de Desarrollo
+- **Quartus Prime Lite Edition (v13.0 SP1 / superiores)**: Síntesis lógica, mapeo tecnológico y visor RTL Viewer.
+- **ModelSim-Altera / QuestaSim**: Simulación funcional combinacional, análisis temporal de formas de onda (*Wave*) y verificación exhaustiva mediante *testbenches*.
