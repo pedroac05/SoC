@@ -20,6 +20,7 @@ work/
 transcript
 *.wlf
 vsim.wlf
+wlft*
 *.log
 modelsim.ini
 
