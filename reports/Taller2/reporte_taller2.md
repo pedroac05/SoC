@@ -59,34 +59,240 @@ $$G_i = B_{i+1} \oplus B_i \quad \forall\ 0 \le i < N-1$$
 ### 1.3. Códigos HDL y Testbenches
 
 #### 1.3.1. Implementación en VHDL (`gray_encoder.vhd`)
-*(Espacio reservado para el código HDL)*
+```vhdl
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+-- Codificador Binario a Código Gray de 4 bits
+-- Implementado a nivel RTL con asignación seleccionada (with/select/when)
+entity gray_encoder is
+    port (
+        b : in  std_logic_vector(3 downto 0); -- Código binario de entrada
+        g : out std_logic_vector(3 downto 0)  -- Código Gray de salida
+    );
+end entity gray_encoder;
+
+architecture RTL of gray_encoder is
+begin
+    with b select
+        g <= "0000" when "0000",
+             "0001" when "0001",
+             "0011" when "0010",
+             "0010" when "0011",
+             "0110" when "0100",
+             "0111" when "0101",
+             "0101" when "0110",
+             "0100" when "0111",
+             "1100" when "1000",
+             "1101" when "1001",
+             "1111" when "1010",
+             "1110" when "1011",
+             "1010" when "1100",
+             "1011" when "1101",
+             "1001" when "1110",
+             "1000" when "1111",
+             "0000" when others;
+end architecture RTL;
+```
 
 #### 1.3.2. Testbench VHDL (`gray_encoder_tb.vhd`)
-*(Espacio reservado para el testbench)*
+```vhdl
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+
+entity gray_encoder_tb is
+end entity gray_encoder_tb;
+
+architecture Behavioral of gray_encoder_tb is
+    component gray_encoder is
+        port (
+            b : in  std_logic_vector(3 downto 0);
+            g : out std_logic_vector(3 downto 0)
+        );
+    end component;
+
+    signal b_tb : std_logic_vector(3 downto 0) := "0000";
+    signal g_tb : std_logic_vector(3 downto 0);
+
+    constant T_STEP : time := 20 ns;
+
+    type gray_array is array (0 to 15) of std_logic_vector(3 downto 0);
+    constant EXPECTED_GRAY : gray_array := (
+        0  => "0000", 1  => "0001", 2  => "0011", 3  => "0010",
+        4  => "0110", 5  => "0111", 6  => "0101", 7  => "0100",
+        8  => "1100", 9  => "1101", 10 => "1111", 11 => "1110",
+        12 => "1010", 13 => "1011", 14 => "1001", 15 => "1000"
+    );
+
+    function hamming_distance(v1, v2 : std_logic_vector(3 downto 0)) return integer is
+        variable diff_count : integer := 0;
+    begin
+        for i in 0 to 3 loop
+            if v1(i) /= v2(i) then
+                diff_count := diff_count + 1;
+            end if;
+        end loop;
+        return diff_count;
+    end function;
+
+begin
+    DUT: gray_encoder
+        port map (
+            b => b_tb,
+            g => g_tb
+        );
+
+    stim_proc: process
+        variable prev_g : std_logic_vector(3 downto 0) := "0000";
+    begin
+        for i in 0 to 15 loop
+            b_tb <= std_logic_vector(to_unsigned(i, 4));
+            wait for T_STEP;
+
+            -- 1. Verificar valor exacto esperado
+            assert g_tb = EXPECTED_GRAY(i)
+                report "ERROR en Binario=" & integer'image(i) &
+                       ": Esperado=" & integer'image(to_integer(unsigned(EXPECTED_GRAY(i)))) &
+                       ", Obtenido=" & integer'image(to_integer(unsigned(g_tb)))
+                severity error;
+
+            -- 2. Verificar distancia de Hamming = 1 respecto al anterior
+            if i > 0 then
+                assert hamming_distance(g_tb, prev_g) = 1
+                    report "ERROR Hamming en i=" & integer'image(i) severity error;
+            end if;
+
+            prev_g := g_tb;
+        end loop;
+
+        report ">>> SIMULACION EXITOSA: Todas las pruebas superadas. <<<";
+        wait;
+    end process;
+end architecture Behavioral;
+```
 
 #### 1.3.3. Implementación en Verilog (`gray_encoder.v`)
-*(Espacio reservado para el código Verilog)*
+```verilog
+`timescale 1ns / 1ps
+
+// Codificador Binario a Código Gray de 4 bits
+// Implementado a nivel RTL mediante bloque always con sentencia case
+module gray_encoder (
+    input  wire [3:0] b, // Código binario de entrada
+    output reg  [3:0] g  // Código Gray de salida
+);
+
+    always @(*) begin
+        case (b)
+            4'b0000: g = 4'b0000;
+            4'b0001: g = 4'b0001;
+            4'b0010: g = 4'b0011;
+            4'b0011: g = 4'b0010;
+            4'b0100: g = 4'b0110;
+            4'b0101: g = 4'b0111;
+            4'b0110: g = 4'b0101;
+            4'b0111: g = 4'b0100;
+            4'b1000: g = 4'b1100;
+            4'b1001: g = 4'b1101;
+            4'b1010: g = 4'b1111;
+            4'b1011: g = 4'b1110;
+            4'b1100: g = 4'b1010;
+            4'b1101: g = 4'b1011;
+            4'b1110: g = 4'b1001;
+            4'b1111: g = 4'b1000;
+            default: g = 4'b0000;
+        endcase
+    end
+
+endmodule
+```
 
 #### 1.3.4. Testbench Verilog (`gray_encoder_tb.v`)
-*(Espacio reservado para el testbench)*
+```verilog
+`timescale 1ns / 1ps
+
+module gray_encoder_tb;
+    reg  [3:0] b;
+    wire [3:0] g;
+
+    integer i;
+    integer errors = 0;
+    reg [3:0] prev_g;
+    reg [3:0] expected_lut [0:15];
+    integer diff_bits;
+
+    gray_encoder dut (
+        .b(b),
+        .g(g)
+    );
+
+    initial begin
+        expected_lut[0]  = 4'b0000; expected_lut[1]  = 4'b0001;
+        expected_lut[2]  = 4'b0011; expected_lut[3]  = 4'b0010;
+        expected_lut[4]  = 4'b0110; expected_lut[5]  = 4'b0111;
+        expected_lut[6]  = 4'b0101; expected_lut[7]  = 4'b0100;
+        expected_lut[8]  = 4'b1100; expected_lut[9]  = 4'b1101;
+        expected_lut[10] = 4'b1111; expected_lut[11] = 4'b1110;
+        expected_lut[12] = 4'b1010; expected_lut[13] = 4'b1011;
+        expected_lut[14] = 4'b1001; expected_lut[15] = 4'b1000;
+
+        prev_g = 4'b0000;
+
+        for (i = 0; i < 16; i = i + 1) begin
+            b = i;
+            #20;
+
+            if (g !== expected_lut[i]) begin
+                $display("ERROR en b=%0d: Esperado=%b, Obtenido=%b", i, expected_lut[i], g);
+                errors = errors + 1;
+            end
+
+            if (i > 0) begin
+                diff_bits = (g[0] ^ prev_g[0]) + (g[1] ^ prev_g[1]) +
+                            (g[2] ^ prev_g[2]) + (g[3] ^ prev_g[3]);
+                if (diff_bits !== 1) begin
+                    $display("ERROR Hamming entre b=%0d y %0d", i-1, i);
+                    errors = errors + 1;
+                end
+            end
+
+            prev_g = g;
+        end
+
+        if (errors == 0)
+            $display(">>> SIMULACION EXITOSA: 0 errores encontrados. <<<");
+        else
+            $display(">>> Simulacion finalizada con %0d errores. <<<", errors);
+
+        $stop;
+    end
+endmodule
+```
 
 ---
 
 ### 1.4. Circuito Generado por Quartus (RTL Viewer)
 
-> **[EVIDENCIA FOTOGRÁFICA 1: RTL VIEWER GRAY ENCODER]**  
-> *Guarda la captura de Quartus (Tools $\rightarrow$ Netlist Viewers $\rightarrow$ RTL Viewer) con el nombre `images/gray_encoder_rtl.png`.*
-
 ![Circuito RTL del codificador binario a Gray](images/gray_encoder_rtl.png)
+
+**Análisis del Esquemático RTL:**
+- Al implementar la tabla de verdad mediante la sentencia concurrente seleccionada (`with b select`), el sintetizador RTL de Quartus Prime reduce automáticamente la tabla de 16 entradas a su representación funcional mínima para cada bit:
+  - El bit más significativo `b[3]` se conecta directamente mediante un hilo conductor hacia `g[3]` ($G_3 = B_3$).
+  - Los bits `g[2]`, `g[1]` y `g[0]` son generados por tres bloques multiplexores 4:1 (`Mux0`, `Mux1`, `Mux2`) cuyas entradas de datos están cableadas a la constante `4'h6` (`0110` en binario) y cuyas líneas de selección `SEL[1..0]` reciben los pares de bits adyacentes `(b[3], b[2])`, `(b[2], b[1])` y `(b[1], b[0])` respectivamente.
+  - La constante `4'h6` (`0110`) evaluada sobre un multiplexor 4:1 implementa exactamente la tabla de verdad de una compuerta **XOR** de 2 entradas ($00 \rightarrow 0$, $01 \rightarrow 1$, $10 \rightarrow 1$, $11 \rightarrow 0$), confirmando físicamente las ecuaciones deducidas $G_i = B_{i+1} \oplus B_i$.
 
 ---
 
 ### 1.5. Simulación en ModelSim y Análisis de Resultados
 
-> **[EVIDENCIA FOTOGRÁFICA 2: SIMULACIÓN MODELSIM GRAY ENCODER]**  
-> *Guarda la captura de la forma de onda de ModelSim con el nombre `images/gray_encoder_modelsim.png`.*
-
 ![Forma de onda de la simulación del codificador Gray](images/gray_encoder_modelsim.png)
+
+**Análisis del Diagrama de Tiempos y Eventos de Interés:**
+- En la simulación funcional (`0 ns` a `320 ns`, con pasos de `20 ns` por estímulo) se recorren exhaustivamente los 16 valores de entrada `b_tb` desde `0` (`0000`) hasta `15` (`1111`).
+- **Evento Crítico 1 ($t = 60\text{ ns} \rightarrow 80\text{ ns}$, transición de 3 a 4):** En binario natural (`b_tb`), el paso de `0011` (3) a `0100` (4) obliga a conmutar 3 bits simultáneamente. En la salida Gray (`g_tb`), el valor pasa de `0010` (2) a `0110` (6), cambiando **únicamente el bit $G_2$**.
+- **Evento Crítico 2 ($t = 140\text{ ns} \rightarrow 160\text{ ns}$, transición de 7 a 8):** En el cruce de mitad de escala, `b_tb` cambia todos sus 4 bits de `0111` (7) a `1000` (8). En contraste, la salida `g_tb` pasa de `0100` (4) a `1100` (12), conmutando exclusivamente el bit más significativo $G_3$.
+- **Conclusión:** Las aserciones automáticas del testbench (`hamming_distance = 1`) finalizaron con **0 errores**, comprobando que el circuito elimina el riesgo de estados transitorios espurios entre códigos adyacentes.
 
 ---
 
@@ -99,25 +305,192 @@ Un circuito *Barrel Shifter* realiza desplazamientos combinacionales de palabras
 ### 2.1. Barrel Shifter de 1 Bit de Desplazamiento
 
 #### 2.1.1. Análisis y Ecuaciones
-- **Entradas:** `inp(7 downto 0)`, `shift` (1 bit).
+- **Entradas:** `inp(7 downto 0)` (palabra de datos de 8 bits), `shift` (1 bit de control).
 - **Salida:** `outp(7 downto 0)`.
-- Si `shift = '0'`: $\text{outp} = \text{inp}$.
-- Si `shift = '1'`: $\text{outp}(0) = \text{'0'}$, $\text{outp}(i) = \text{inp}(i-1)$ para $1 \le i \le 7$.
+- **Operación:**
+  - Si `shift = '0'`: $\text{outp} = \text{inp}$ (el dato pasa intacto a través de las entradas `0` de los 8 multiplexores 2:1).
+  - Si `shift = '1'`: $\text{outp}(0) = \text{'0'}$ y $\text{outp}(i) = \text{inp}(i-1)$ para $1 \le i \le 7$, lo que equivale a concatenar `'0'` en el LSB: `outp <= inp(6 downto 0) & '0'`.
 
-#### 2.1.2. Códigos HDL
-*(Espacio reservado para implementación y testbench)*
+#### 2.1.2. Códigos HDL y Testbenches
+
+##### Implementación en VHDL (`barrel_shifter_1bit.vhd`)
+```vhdl
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity barrel_shifter_1bit is
+    port (
+        inp   : in  std_logic_vector(7 downto 0); -- Vector de entrada (8 bits)
+        shift : in  std_logic;                    -- Control: '0' = sin cambio, '1' = << 1
+        outp  : out std_logic_vector(7 downto 0)  -- Vector de salida desplazado
+    );
+end entity barrel_shifter_1bit;
+
+architecture Concurrent_RTL of barrel_shifter_1bit is
+begin
+    outp <= (inp(6 downto 0) & '0') when (shift = '1') else inp;
+end architecture Concurrent_RTL;
+```
+
+##### Testbench VHDL (`barrel_shifter_1bit_tb.vhd`)
+```vhdl
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+
+entity barrel_shifter_1bit_tb is
+end entity barrel_shifter_1bit_tb;
+
+architecture Behavioral of barrel_shifter_1bit_tb is
+    component barrel_shifter_1bit is
+        port (
+            inp   : in  std_logic_vector(7 downto 0);
+            shift : in  std_logic;
+            outp  : out std_logic_vector(7 downto 0)
+        );
+    end component;
+
+    signal inp_tb   : std_logic_vector(7 downto 0) := (others => '0');
+    signal shift_tb : std_logic := '0';
+    signal outp_tb  : std_logic_vector(7 downto 0);
+
+    constant T_STEP : time := 20 ns;
+
+    type vec_array is array (0 to 5) of std_logic_vector(7 downto 0);
+    constant TEST_PATTERNS : vec_array := (
+        0 => "00000001", -- 0x01: bit en LSB
+        1 => "10000000", -- 0x80: bit en MSB (se descarta al desplazar)
+        2 => "10101010", -- 0xAA: patrón alternado 1010...
+        3 => "01010101", -- 0x55: patrón alternado 0101...
+        4 => "11001011", -- 0xCB: patrón asimétrico de prueba
+        5 => "11111111"  -- 0xFF: todos en 1
+    );
+begin
+    DUT: barrel_shifter_1bit
+        port map (
+            inp   => inp_tb,
+            shift => shift_tb,
+            outp  => outp_tb
+        );
+
+    stim_proc: process
+        variable expected_out : std_logic_vector(7 downto 0);
+    begin
+        for i in TEST_PATTERNS'range loop
+            inp_tb <= TEST_PATTERNS(i);
+
+            -- Caso A: Sin desplazamiento (shift = '0')
+            shift_tb <= '0';
+            wait for T_STEP;
+            expected_out := TEST_PATTERNS(i);
+            assert outp_tb = expected_out
+                report "ERROR con shift=0 en patron " & integer'image(i) severity error;
+
+            -- Caso B: Desplazamiento de 1 bit a la izquierda (shift = '1')
+            shift_tb <= '1';
+            wait for T_STEP;
+            expected_out := TEST_PATTERNS(i)(6 downto 0) & '0';
+            assert outp_tb = expected_out
+                report "ERROR con shift=1 en patron " & integer'image(i) severity error;
+        end loop;
+
+        report ">>> SIMULACION EXITOSA: barrel_shifter_1bit verificado. <<<";
+        wait;
+    end process;
+end architecture Behavioral;
+```
+
+##### Implementación en Verilog (`barrel_shifter_1bit.v`)
+```verilog
+`timescale 1ns / 1ps
+
+module barrel_shifter_1bit (
+    input  wire [7:0] inp,   // Vector de entrada (8 bits)
+    input  wire       shift, // Control: 0 = sin cambio, 1 = << 1
+    output wire [7:0] outp   // Vector de salida desplazado
+);
+
+    assign outp = shift ? {inp[6:0], 1'b0} : inp;
+
+endmodule
+```
+
+##### Testbench Verilog (`barrel_shifter_1bit_tb.v`)
+```verilog
+`timescale 1ns / 1ps
+
+module barrel_shifter_1bit_tb;
+    reg  [7:0] inp;
+    reg        shift;
+    wire [7:0] outp;
+
+    integer i;
+    integer errors = 0;
+    reg [7:0] patterns [0:5];
+    reg [7:0] expected;
+
+    barrel_shifter_1bit dut (
+        .inp(inp),
+        .shift(shift),
+        .outp(outp)
+    );
+
+    initial begin
+        patterns[0] = 8'b0000_0001;
+        patterns[1] = 8'b1000_0000;
+        patterns[2] = 8'b1010_1010;
+        patterns[3] = 8'b0101_0101;
+        patterns[4] = 8'b1100_1011;
+        patterns[5] = 8'b1111_1111;
+
+        for (i = 0; i < 6; i = i + 1) begin
+            inp = patterns[i];
+
+            shift = 1'b0;
+            expected = patterns[i];
+            #20;
+            if (outp !== expected) errors = errors + 1;
+
+            shift = 1'b1;
+            expected = {patterns[i][6:0], 1'b0};
+            #20;
+            if (outp !== expected) errors = errors + 1;
+        end
+
+        if (errors == 0)
+            $display(">>> SIMULACION EXITOSA: 0 errores encontrados. <<<");
+        else
+            $display(">>> Simulacion finalizada con %0d errores. <<<", errors);
+
+        $stop;
+    end
+endmodule
+```
 
 #### 2.1.3. Circuito Generado por Quartus (RTL Viewer)
-> **[EVIDENCIA FOTOGRÁFICA 3: RTL VIEWER BARREL SHIFTER 1-BIT]**  
-> *Guarda la captura con el nombre `images/barrel_shifter_1bit_rtl.png`.*
 
 ![Circuito RTL del barrel shifter de 1 bit](images/barrel_shifter_1bit_rtl.png)
 
+**Análisis del Esquemático RTL:**
+- El sintetizador de Quartus genera un bloque multiplexor vectorial de 8 bits denominado `MUX21`.
+- La señal de control `shift` está conectada al puerto de selección `SEL`.
+- El puerto `DATAA` recibe directamente el bus de entrada `inp[7..0]`, representando la condición `shift = '0'` donde la salida permanece inalterada (`outp = inp`).
+- El puerto `DATAB` recibe el bus de entrada desplazado junto con una constante lógica `1'h0--` cableada al bit menos significativo (LSB, bit 0), mientras que los bits `inp[6..0]` se mapean a las posiciones `[7..1]`. Esto sintetiza fielmente el desplazamiento combinacional a la izquierda con descarte del bit más significativo `inp[7]`.
+- La salida vectorial `OUT0` entrega directamente el bus de 8 bits `outp[7..0]`.
+
 #### 2.1.4. Simulación en ModelSim
-> **[EVIDENCIA FOTOGRÁFICA 4: SIMULACIÓN MODELSIM BARREL SHIFTER 1-BIT]**  
-> *Guarda la captura con el nombre `images/barrel_shifter_1bit_modelsim.png`.*
 
 ![Simulación del barrel shifter de 1 bit](images/barrel_shifter_1bit_modelsim.png)
+
+**Análisis del Diagrama de Tiempos y Eventos de Interés:**
+- Se verifican 6 patrones de prueba representativos (`0x01`, `0x80`, `0xAA`, `0x55`, `0xCB`, `0xFF`) evaluando para cada uno el comportamiento con `shift = '0'` y `shift = '1'` en intervalos de 20 ns (duración total 240 ns):
+  1. **Patrón LSB ($t = 0\text{ ns} \rightarrow 40\text{ ns}$, `inp = 0x01` / `00000001`):** Con `shift = 0`, `outp = 0x01`. Con `shift = 1`, el bit 1 se desplaza a la posición 1 (`outp = 0x02` / `00000010`) y entra un `0` en la posición 0.
+  2. **Patrón MSB ($t = 40\text{ ns} \rightarrow 80\text{ ns}$, `inp = 0x80` / `10000000`):** Con `shift = 0`, `outp = 0x80`. Con `shift = 1`, el bit en la posición 7 se descarta al salir del bus y entra un `0` en LSB, resultando en `outp = 0x00` (`00000000`).
+  3. **Patrón Alternado 1 ($t = 80\text{ ns} \rightarrow 120\text{ ns}$, `inp = 0xAA` / `10101010`):** Con `shift = 1`, se obtiene `outp = 0x54` (`01010100`), verificando el descarte del `1` en MSB y la inserción del `0` en LSB.
+  4. **Patrón Alternado 2 ($t = 120\text{ ns} \rightarrow 160\text{ ns}$, `inp = 0x55` / `01010101`):** Con `shift = 1`, se obtiene `outp = 0xAA` (`10101010`), donde cada bit se multiplica efectivamente por 2 ($55_{16} \times 2 = \text{AA}_{16}$).
+  5. **Patrón Asimétrico ($t = 160\text{ ns} \rightarrow 200\text{ ns}$, `inp = 0xCB` / `11001011`):** Con `shift = 1`, produce `outp = 0x96` (`10010110`).
+  6. **Patrón Saturado ($t = 200\text{ ns} \rightarrow 240\text{ ns}$, `inp = 0xFF` / `11111111`):** Con `shift = 1`, produce `outp = 0xFE` (`11111110`), confirmando que únicamente el LSB se vuelve `'0'`.
+- El banco de pruebas automático reportó **0 errores**.
 
 ---
 
@@ -125,27 +498,211 @@ Un circuito *Barrel Shifter* realiza desplazamientos combinacionales de palabras
 
 #### 2.2.1. Arquitectura en Cascada
 Compuesto por 3 etapas secuenciales de multiplexores 2 a 1:
-1. **Etapa 0 (controlada por `shift(0)`):** Desplaza 0 o 1 posición.
-2. **Etapa 1 (controlada por `shift(1)`):** Desplaza 0 o 2 posiciones.
-3. **Etapa 2 (controlada por `shift(2)`):** Desplaza 0 o 4 posiciones.
+1. **Etapa 0 (controlada por `shift(0)`):** Desplaza 0 o 1 posición (`inp(6 downto 0) & '0'`).
+2. **Etapa 1 (controlada por `shift(1)`):** Desplaza 0 o 2 posiciones (`s0(5 downto 0) & "00"`).
+3. **Etapa 2 (controlada por `shift(2)`):** Desplaza 0 o 4 posiciones (`s1(3 downto 0) & "0000"`).
 
 Cualquier desplazamiento entero de $0$ a $7$ ($2^3 - 1$) se sintetiza como suma de potencias de 2:
 $$\text{Desplazamiento} = \text{shift}(0) \cdot 1 + \text{shift}(1) \cdot 2 + \text{shift}(2) \cdot 4$$
 
 #### 2.2.2. Códigos HDL y Testbenches
-*(Espacio reservado para implementación estructural y testbench exhaustivo de 0 a 7)*
+
+##### Implementación en VHDL (`barrel_shifter_8bit.vhd`)
+```vhdl
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity barrel_shifter_8bit is
+    port (
+        inp   : in  std_logic_vector(7 downto 0); -- Vector de entrada (8 bits)
+        shift : in  std_logic_vector(2 downto 0); -- Cantidad de desplazamiento (0 a 7)
+        outp  : out std_logic_vector(7 downto 0)  -- Vector de salida desplazado
+    );
+end entity barrel_shifter_8bit;
+
+architecture Cascaded_RTL of barrel_shifter_8bit is
+    signal s0 : std_logic_vector(7 downto 0); -- Salida de Etapa 0 (+1 bit)
+    signal s1 : std_logic_vector(7 downto 0); -- Salida de Etapa 1 (+2 bits)
+begin
+    -- Etapa 0: Desplazamiento de 1 posición controlado por shift(0)
+    s0 <= (inp(6 downto 0) & '0') when (shift(0) = '1') else inp;
+
+    -- Etapa 1: Desplazamiento de 2 posiciones controlado por shift(1)
+    s1 <= (s0(5 downto 0) & "00") when (shift(1) = '1') else s0;
+
+    -- Etapa 2: Desplazamiento de 4 posiciones controlado por shift(2)
+    outp <= (s1(3 downto 0) & "0000") when (shift(2) = '1') else s1;
+end architecture Cascaded_RTL;
+```
+
+##### Testbench VHDL (`barrel_shifter_8bit_tb.vhd`)
+```vhdl
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+
+entity barrel_shifter_8bit_tb is
+end entity barrel_shifter_8bit_tb;
+
+architecture Behavioral of barrel_shifter_8bit_tb is
+    component barrel_shifter_8bit is
+        port (
+            inp   : in  std_logic_vector(7 downto 0);
+            shift : in  std_logic_vector(2 downto 0);
+            outp  : out std_logic_vector(7 downto 0)
+        );
+    end component;
+
+    signal inp_tb   : std_logic_vector(7 downto 0) := "11010101";
+    signal shift_tb : std_logic_vector(2 downto 0) := "000";
+    signal outp_tb  : std_logic_vector(7 downto 0);
+
+    constant T_STEP : time := 20 ns;
+begin
+    DUT: barrel_shifter_8bit
+        port map (
+            inp   => inp_tb,
+            shift => shift_tb,
+            outp  => outp_tb
+        );
+
+    stim_proc: process
+        variable expected_out : std_logic_vector(7 downto 0);
+    begin
+        -- Prueba 1: Bit '1' caminando desde el bit 0 hasta el bit 7
+        inp_tb <= "00000001";
+        for s in 0 to 7 loop
+            shift_tb <= std_logic_vector(to_unsigned(s, 3));
+            wait for T_STEP;
+            expected_out := std_logic_vector(shift_left(unsigned(inp_tb), s));
+            assert outp_tb = expected_out
+                report "ERROR en inp=00000001, shift=" & integer'image(s) severity error;
+        end loop;
+
+        -- Prueba 2: Patrón asimétrico "10110101" (0xB5) para shift = 0..7
+        inp_tb <= "10110101";
+        for s in 0 to 7 loop
+            shift_tb <= std_logic_vector(to_unsigned(s, 3));
+            wait for T_STEP;
+            expected_out := std_logic_vector(shift_left(unsigned(inp_tb), s));
+            assert outp_tb = expected_out
+                report "ERROR en inp=10110101, shift=" & integer'image(s) severity error;
+        end loop;
+
+        -- Prueba 3: Vector "11111111" (0xFF) mostrando la inserción progresiva de ceros
+        inp_tb <= "11111111";
+        for s in 0 to 7 loop
+            shift_tb <= std_logic_vector(to_unsigned(s, 3));
+            wait for T_STEP;
+            expected_out := std_logic_vector(shift_left(unsigned(inp_tb), s));
+            assert outp_tb = expected_out
+                report "ERROR en inp=11111111, shift=" & integer'image(s) severity error;
+        end loop;
+
+        report ">>> SIMULACION EXITOSA: Todos los desplazamientos 0..7 OK <<<";
+        wait;
+    end process;
+end architecture Behavioral;
+```
+
+##### Implementación en Verilog (`barrel_shifter_8bit.v`)
+```verilog
+`timescale 1ns / 1ps
+
+module barrel_shifter_8bit (
+    input  wire [7:0] inp,   // Vector de entrada (8 bits)
+    input  wire [2:0] shift, // Cantidad de desplazamiento (0 a 7)
+    output wire [7:0] outp   // Vector de salida desplazado
+);
+
+    wire [7:0] s0; // Salida de Etapa 0 (+1 bit)
+    wire [7:0] s1; // Salida de Etapa 1 (+2 bits)
+
+    assign s0   = shift[0] ? {inp[6:0], 1'b0}    : inp;
+    assign s1   = shift[1] ? {s0[5:0],  2'b00}   : s0;
+    assign outp = shift[2] ? {s1[3:0],  4'b0000} : s1;
+
+endmodule
+```
+
+##### Testbench Verilog (`barrel_shifter_8bit_tb.v`)
+```verilog
+`timescale 1ns / 1ps
+
+module barrel_shifter_8bit_tb;
+    reg  [7:0] inp;
+    reg  [2:0] shift;
+    wire [7:0] outp;
+
+    integer s;
+    integer errors = 0;
+    reg [7:0] expected;
+
+    barrel_shifter_8bit dut (
+        .inp(inp),
+        .shift(shift),
+        .outp(outp)
+    );
+
+    initial begin
+        inp = 8'b0000_0001;
+        for (s = 0; s < 8; s = s + 1) begin
+            shift = s[2:0]; expected = inp << s; #20;
+            if (outp !== expected) errors = errors + 1;
+        end
+
+        inp = 8'b1011_0101;
+        for (s = 0; s < 8; s = s + 1) begin
+            shift = s[2:0]; expected = inp << s; #20;
+            if (outp !== expected) errors = errors + 1;
+        end
+
+        inp = 8'b1111_1111;
+        for (s = 0; s < 8; s = s + 1) begin
+            shift = s[2:0]; expected = inp << s; #20;
+            if (outp !== expected) errors = errors + 1;
+        end
+
+        if (errors == 0)
+            $display(">>> SIMULACION EXITOSA: 0 errores encontrados. <<<");
+        else
+            $display(">>> Simulacion finalizada con %0d errores. <<<", errors);
+
+        $stop;
+    end
+endmodule
+```
 
 #### 2.2.3. Circuito Generado por Quartus (RTL Viewer)
-> **[EVIDENCIA FOTOGRÁFICA 5: RTL VIEWER BARREL SHIFTER 8-BIT]**  
-> *Guarda la captura con el nombre `images/barrel_shifter_8bit_rtl.png`.*
 
 ![Circuito RTL del barrel shifter de 8 bits](images/barrel_shifter_8bit_rtl.png)
 
+**Análisis del Esquemático RTL:**
+- El esquemático sintetizado en Quartus evidencia fielmente la estructura en cascada de 3 etapas descrita en la arquitectura:
+  1. **Primera etapa (`MUX21` izquierdo):** Controlada por el bit `shift[0]`. Recibe la entrada `inp[7..0]` en `DATAA` y la entrada desplazada con 1 cero (`1'h0--`) en `DATAB`. Su salida genera el bus intermedio `s0[7..0]`.
+  2. **Segunda etapa (`MUX21` central):** Controlada por el bit `shift[1]`. Recibe `s0[7..0]` en `DATAA` y `s0` desplazada 2 posiciones con dos ceros (`2'h0--`) en `DATAB`. Su salida genera el bus intermedio `s1[7..0]`.
+  3. **Tercera etapa (`MUX21` derecho):** Controlada por el bit `shift[2]`. Recibe `s1[7..0]` en `DATAA` y `s1` desplazada 4 posiciones con cuatro ceros (`4'h0--`) en `DATAB`. Su salida genera el bus final de salida `outp[7..0]`.
+- Esta topología en cascada minimiza la complejidad de interconexión con un costo de propagación combinacional de solo 3 niveles de multiplexores ($3 \times t_{pd\_mux}$), logrando desplazamientos programables arbitrarios de $0$ a $7$ posiciones en un único paso combinacional.
+
 #### 2.2.4. Simulación en ModelSim
-> **[EVIDENCIA FOTOGRÁFICA 6: SIMULACIÓN MODELSIM BARREL SHIFTER 8-BIT]**  
-> *Guarda la captura con el nombre `images/barrel_shifter_8bit_modelsim.png`.*
 
 ![Simulación del barrel shifter de 8 bits](images/barrel_shifter_8bit_modelsim.png)
+
+**Análisis del Diagrama de Tiempos y Eventos de Interés:**
+- La simulación cubre 480 ns analizando 3 secuencias completas de desplazamiento ($0$ a $7$):
+  1. **Secuencia 1 ($0\text{ ns} \rightarrow 160\text{ ns}$, `inp = 0x01` / `00000001`):** Conforme `shift` incrementa de `0` a `7`, el bit `'1'` se traslada secuencialmente de la posición 0 a la posición 7:
+     - `shift = 0` $\rightarrow$ `outp = 0x01` (`00000001`)
+     - `shift = 1` $\rightarrow$ `outp = 0x02` (`00000010`)
+     - `shift = 2` $\rightarrow$ `outp = 0x04` (`00000100`)
+     - `shift = 3` $\rightarrow$ `outp = 0x08` (`00001000`)
+     - `shift = 4` $\rightarrow$ `outp = 0x10` (`00010000`)
+     - `shift = 5` $\rightarrow$ `outp = 0x20` (`00100000`)
+     - `shift = 6` $\rightarrow$ `outp = 0x40` (`01000000`)
+     - `shift = 7` $\rightarrow$ `outp = 0x80` (`10000000`)
+     Se aprecian las transiciones de las etapas intermedias `s0` (activa cuando `shift[0] = 1`) y `s1` (activa cuando `shift[1] = 1`), corroborando la adición de desplazamientos en potencias de 2 ($1 + 2 + 4$).
+  2. **Secuencia 2 ($160\text{ ns} \rightarrow 320\text{ ns}$, `inp = 0xB5` / `10110101`):** Se verifica el desplazamiento de un patrón denso: `B5` $\rightarrow$ `6A` $\rightarrow$ `D4` $\rightarrow$ `A8` $\rightarrow$ `50` $\rightarrow$ `A0` $\rightarrow$ `40` $\rightarrow$ `80`, demostrando que los bits que sobrepasan la posición 7 se descartan y los ceros ingresan rigurosamente por el LSB.
+  3. **Secuencia 3 ($320\text{ ns} \rightarrow 480\text{ ns}$, `inp = 0xFF` / `11111111`):** Permite observar la penetración de una ráfaga creciente de ceros: `FF` (0 ceros) $\rightarrow$ `FE` (1 cero) $\rightarrow$ `FC` (2 ceros) $\rightarrow$ `F8` (3 ceros) $\rightarrow$ `F0` (4 ceros) $\rightarrow$ `E0` (5 ceros) $\rightarrow$ `C0` (6 ceros) $\rightarrow$ `80` (7 ceros).
+- Todas las aserciones automáticas en el testbench finalizaron con **0 errores**.
 
 ---
 

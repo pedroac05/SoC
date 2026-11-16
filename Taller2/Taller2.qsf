@@ -20,6 +20,9 @@ set_global_assignment -name EDA_OUTPUT_DATA_FORMAT VHDL -section_id eda_simulati
 set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
 set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
 set_global_assignment -name TOP_LEVEL_ENTITY comparator_signed
+set_global_assignment -name VHDL_FILE ej1_gray_code/vhdl/src/gray_encoder.vhd
+set_global_assignment -name VHDL_FILE ej2_barrel_shifter/vhdl/src/barrel_shifter_1bit.vhd
+set_global_assignment -name VHDL_FILE ej2_barrel_shifter/vhdl/src/barrel_shifter_8bit.vhd
 set_global_assignment -name VHDL_FILE ej3_comparator_signed/vhdl/src/comparator_signed.vhd
 
 set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
