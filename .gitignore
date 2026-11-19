@@ -14,6 +14,10 @@ simulation/
 *.sof
 *.sld
 *.qdf
+*.cdf
+c5_pin_model_dump.txt
+cio_dump_disallowed_lists.echo
+greybox_tmp/
 
 # ModelSim / QuestaSim temporary files
 work/
