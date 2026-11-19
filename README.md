@@ -51,6 +51,18 @@ SoC/
 │       ├── verilog/ (src/, tb/)
 │       └── sim/
 │
+├── Taller4/                                  # Taller 4: Circuitos Secuenciales — Contadores
+│   ├── Taller4.qpf                           # Proyecto Quartus Prime (Cyclone V DE1-SoC)
+│   ├── Taller4.qsf                           # Configuraciones y asignaciones Quartus
+│   ├── ej1_univ_counter/                     # Contador Binario Universal Parametrizable
+│   │   ├── vhdl/ (src/, tb/)
+│   │   ├── verilog/ (src/, tb/)
+│   │   └── sim/
+│   └── ej2_stopwatch/                        # Cronómetro Digital BCD (00.0 a 99.9 s) en 7-Segmentos
+│       ├── vhdl/ (src/, tb/)
+│       ├── verilog/ (src/, tb/)
+│       └── sim/
+│
 └── reports/                                  # Documentación técnica, enunciados y reportes
     ├── Taller1/
     │   ├── enunciado_taller1.md              # Enunciado del Taller 1
@@ -62,10 +74,15 @@ SoC/
     │   ├── reporte_taller2.md                # Reporte técnico consolidado (con 10 evidencias)
     │   └── images/                           # Capturas RTL Viewer y formas de onda ModelSim
     │
-    └── Taller3/
-        ├── enunciado_taller3.md              # Enunciado del Taller 3
-        ├── reporte_taller3.md                # Reporte técnico consolidado (Parte I y Parte II)
-        └── images/                           # Capturas RTL, recursos Fitter y simulaciones ModelSim
+    ├── Taller3/
+    │   ├── enunciado_taller3.md              # Enunciado del Taller 3
+    │   ├── reporte_taller3.md                # Reporte técnico consolidado (Parte I y Parte II)
+    │   └── images/                           # Capturas RTL, recursos Fitter y simulaciones ModelSim
+    │
+    └── Taller4/
+        ├── enunciado_taller4.md              # Enunciado del Taller 4
+        ├── reporte_taller4.md                # Reporte técnico consolidado (Contadores y Cronómetro)
+        └── images/                           # Capturas RTL Viewer y simulaciones ModelSim
 ```
 
 ---
