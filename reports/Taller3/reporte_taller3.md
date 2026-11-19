@@ -820,20 +820,32 @@ endmodule
 
 ### 2.1. Punto 5: Arquitectura e Integración de IPs de Punto Flotante en Quartus
 
-#### 2.1.1. Configuración de Módulos IP (Menor Latencia Posible)
-| Módulo IP | Operación (`selop`) | Latencia Configurada (Ciclos) | Elementos Lógicos (ALMs) | Bloques DSP |
-| :--- | :---: | :---: | :---: | :---: |
-| `fp_add` (`ALTFP_ADD_SUB`) | `00` (Suma) | - | - | - |
-| `fp_sub` (`ALTFP_ADD_SUB`) | `01` (Resta) | - | - | - |
-| `fp_mul` (`ALTFP_MULT`) | `10` (Multiplicación) | - | - | - |
-| `fp_div` (`ALTFP_DIV`) | `11` (División) | - | - | - |
-| **Total Unidad FPU** | **Todas** | - | - | - |
+#### 2.1.1. Configuración de Módulos IP (Menor Latencia Posible a 50 MHz)
+Los 4 módulos aritméticos de precisión simple (**FP32 IEEE 754**, 8 bits de exponente y 23 bits de mantisa) fueron generados mediante el catálogo IP de **Quartus Prime 20.1.1** (`altera_fp_functions`) configurados para **Cyclone V (`5CSEMA5F31C6`)** con el mínimo *pipeline* soportado a **50 MHz**:
+
+| Módulo IP | Operación (`selop`) | Latencia (Ciclos / ns) | ALMs | Registros | Memoria M10K | Bloques DSP |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| `fp_add` (`U_FP_ADD`) | `00` (Suma) | `2` (`40 ns`) | `321.1` | `113` | `0` | `0` |
+| `fp_sub` (`U_FP_SUB`) | `01` (Resta) | `2` (`40 ns`) | `128.6` | `70` | `0` | `0` |
+| `fp_mul` (`U_FP_MUL`) | `10` (Multiplicación) | `2` (`40 ns`) | `52.5` | `30` | `0` | `1` |
+| `fp_div` (`U_FP_DIV`) | `11` (División) | `11` (`220 ns`) | `254.5` | `448` | `5` (`33,792 bits`) | `4` |
+| MUX 4:1 (`fpu_top`) | Selección | Combinacional | `48.6` | `0` | `0` | `0` |
+| **Total Unidad FPU** | **Todas** | **2 – 11 ciclos** | **`806 / 32,070 (3%)`** | **`661`** | **`5 / 397 (1%)`** | **`5 / 87 (6%)`** |
+
+**Observaciones sobre la síntesis de recursos (Fitter Cyclone V):**
+- **Implementación en Elementos Lógicos (ALMs):** `fp_add` y `fp_sub` se implementan íntegramente en ALMs y registros (`0` DSPs). El Fitter comparte parte de la lógica de alineación de exponentes entre `fp_add` y `fp_sub` al compartir los mismos operandos `A` y `B`, reduciendo el área de `fp_sub` de `321.1` a `128.6` ALMs.
+- **Implementación en Bloques DSP y M10K:** `fp_mul` aprovecha **`1` bloque DSP** dedicado para el producto de mantisas de 24×24 bits (reduciendo su consumo lógico a solo `52.5` ALMs). `fp_div` utiliza **`4` bloques DSP** junto con **`5` bloques de memoria M10K** (`33,792 bits`) para almacenar tablas de aproximación inversa y etapas *pipeline* (`448` registros).
+- **Total en la FPGA:** El sistema completo ocupa únicamente el **3% de los ALMs**, el **6% de los bloques DSP** y el **1% de la memoria RAM M10K** disponibles en la `5CSEMA5F31C6` (`100` pines I/O).
 
 #### 2.1.2. Circuito Generado por Quartus (RTL Viewer y Compilation Report)
-> **[EVIDENCIA FOTOGRÁFICA 6: RTL VIEWER Y RECURSOS FPU]**  
-> *Guarda las capturas con los nombres `images/fpu_rtl.png` y `images/fpu_resources.png`.*
 
-![Circuito RTL de la FPU](images/fpu_rtl.png)
+![Detalle del circuito RTL de la FPU](images/fpu_rtl_zoom.png)
+![Vista completa del circuito RTL de la FPU](images/fpu_rtl.png)
+
+**Análisis del Esquemático RTL:**
+- En la columna izquierda se instancian en paralelo los cuatro bloques IP de punto flotante (`fp_add:U_FP_ADD`, `fp_div:U_FP_DIV`, `fp_mul:U_FP_MUL` y `fp_sub:U_FP_SUB`), todos alimentados de forma concurrente por los buses `A[31..0]`, `B[31..0]`, la señal de reloj `clk` y el reset asíncrono `areset`.
+- En la columna derecha se observa el banco de 32 multiplexores 4:1 (`Mux0` a `Mux31`), cuyas líneas de selección `SEL[1..0]` están gobernadas por `selop[1..0]` para enrutar los 32 bits del resultado seleccionado hacia `result[31..0]`.
+
 ![Reporte de recursos de la FPU en Quartus](images/fpu_resources.png)
 
 ---
@@ -841,21 +853,188 @@ endmodule
 ### 2.2. Punto 6: Implementación en VHDL y en Verilog
 
 #### 2.2.1. Top-Level FPU en VHDL (`fpu_top.vhd`)
-*(Espacio reservado para el código VHDL)*
+```vhdl
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity fpu_top is
+    port (
+        clk    : in  std_logic;
+        areset : in  std_logic := '0';
+        A      : in  std_logic_vector(31 downto 0);
+        B      : in  std_logic_vector(31 downto 0);
+        selop  : in  std_logic_vector(1 downto 0);
+        result : out std_logic_vector(31 downto 0)
+    );
+end entity fpu_top;
+
+architecture rtl of fpu_top is
+    component fp_add is
+        port ( a, b : in std_logic_vector(31 downto 0); q : out std_logic_vector(31 downto 0); clk, areset : in std_logic );
+    end component;
+    component fp_sub is
+        port ( a, b : in std_logic_vector(31 downto 0); q : out std_logic_vector(31 downto 0); clk, areset : in std_logic );
+    end component;
+    component fp_mul is
+        port ( a, b : in std_logic_vector(31 downto 0); q : out std_logic_vector(31 downto 0); clk, areset : in std_logic );
+    end component;
+    component fp_div is
+        port ( a, b : in std_logic_vector(31 downto 0); q : out std_logic_vector(31 downto 0); clk, areset : in std_logic );
+    end component;
+
+    signal result_add, result_sub, result_mul, result_div : std_logic_vector(31 downto 0);
+begin
+    U_FP_ADD: fp_add port map (clk => clk, areset => areset, a => A, b => B, q => result_add);
+    U_FP_SUB: fp_sub port map (clk => clk, areset => areset, a => A, b => B, q => result_sub);
+    U_FP_MUL: fp_mul port map (clk => clk, areset => areset, a => A, b => B, q => result_mul);
+    U_FP_DIV: fp_div port map (clk => clk, areset => areset, a => A, b => B, q => result_div);
+
+    with selop select
+        result <= result_add when "00",
+                  result_sub when "01",
+                  result_mul when "10",
+                  result_div when others;
+end architecture rtl;
+```
 
 #### 2.2.2. Top-Level FPU en Verilog (`fpu_top.v`)
-*(Espacio reservado para el código Verilog)*
+```verilog
+`timescale 1ns / 1ps
+
+module fpu_top (
+    input  wire        clk,
+    input  wire        areset,
+    input  wire [31:0] A,
+    input  wire [31:0] B,
+    input  wire [1:0]  selop,
+    output reg  [31:0] result
+);
+
+    wire [31:0] result_add;
+    wire [31:0] result_sub;
+    wire [31:0] result_mul;
+    wire [31:0] result_div;
+
+    fp_add U_FP_ADD (.clk(clk), .areset(areset), .a(A), .b(B), .q(result_add));
+    fp_sub U_FP_SUB (.clk(clk), .areset(areset), .a(A), .b(B), .q(result_sub));
+    fp_mul U_FP_MUL (.clk(clk), .areset(areset), .a(A), .b(B), .q(result_mul));
+    fp_div U_FP_DIV (.clk(clk), .areset(areset), .a(A), .b(B), .q(result_div));
+
+    always @(*) begin
+        case (selop)
+            2'b00:   result = result_add;
+            2'b01:   result = result_sub;
+            2'b10:   result = result_mul;
+            2'b11:   result = result_div;
+            default: result = 32'h00000000;
+        endcase
+    end
+
+endmodule
+```
 
 ---
 
 ### 2.3. Punto 7: Simulación a 50 MHz y Análisis de Latencias
 
 #### 2.3.1. Testbench a 50 MHz ($T_{\text{clk}} = 20\text{ ns}$)
-*(Espacio reservado para el testbench)*
+```vhdl
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity fpu_top_tb is
+end entity fpu_top_tb;
+
+architecture Behavioral of fpu_top_tb is
+    component fpu_top is
+        port (
+            clk, areset : in std_logic;
+            A, B        : in std_logic_vector(31 downto 0);
+            selop       : in std_logic_vector(1 downto 0);
+            result      : out std_logic_vector(31 downto 0)
+        );
+    end component;
+
+    constant CLK_PERIOD : time := 20 ns; -- 50 MHz
+    signal clk_tb, areset_tb : std_logic := '0';
+    signal A_tb, B_tb, result_tb : std_logic_vector(31 downto 0) := (others => '0');
+    signal selop_tb : std_logic_vector(1 downto 0) := "00";
+begin
+    clk_tb <= not clk_tb after CLK_PERIOD / 2;
+
+    DUT: fpu_top
+        port map ( clk => clk_tb, areset => areset_tb, A => A_tb, B => B_tb, selop => selop_tb, result => result_tb );
+
+    stim_proc: process
+        variable errors : integer := 0;
+    begin
+        areset_tb <= '1'; wait for 2 * CLK_PERIOD;
+        areset_tb <= '0'; wait until rising_edge(clk_tb);
+
+        -- Prueba 1: A = 6.5 (0x40D00000), B = 2.0 (0x40000000)
+        A_tb <= x"40D00000"; B_tb <= x"40000000";
+        selop_tb <= "00"; wait for 3 * CLK_PERIOD; -- 8.5  (0x41080000)
+        if result_tb /= x"41080000" then errors := errors + 1; end if;
+        selop_tb <= "01"; wait for 2 * CLK_PERIOD; -- 4.5  (0x40900000)
+        if result_tb /= x"40900000" then errors := errors + 1; end if;
+        selop_tb <= "10"; wait for 2 * CLK_PERIOD; -- 13.0 (0x41500000)
+        if result_tb /= x"41500000" then errors := errors + 1; end if;
+        selop_tb <= "11"; wait for 7 * CLK_PERIOD; -- 3.25 (0x40500000)
+        if result_tb /= x"40500000" then errors := errors + 1; end if;
+
+        -- Prueba 2: A = 10.5 (0x41280000), B = -3.0 (0xC0400000)
+        A_tb <= x"41280000"; B_tb <= x"C0400000";
+        selop_tb <= "00"; wait for 3 * CLK_PERIOD; -- 7.5   (0x40F00000)
+        if result_tb /= x"40F00000" then errors := errors + 1; end if;
+        selop_tb <= "01"; wait for 2 * CLK_PERIOD; -- 13.5  (0x41580000)
+        if result_tb /= x"41580000" then errors := errors + 1; end if;
+        selop_tb <= "10"; wait for 2 * CLK_PERIOD; -- -31.5 (0xC1FC0000)
+        if result_tb /= x"C1FC0000" then errors := errors + 1; end if;
+        selop_tb <= "11"; wait for 7 * CLK_PERIOD; -- -3.5  (0xC0600000)
+        if result_tb /= x"C0600000" then errors := errors + 1; end if;
+
+        if errors = 0 then
+            report ">> VERIFICACION FPU EXITOSA: Todas las operaciones FP32 pasaron sin errores!" severity note;
+        end if;
+        wait;
+    end process;
+end architecture Behavioral;
+```
 
 #### 2.3.2. Resultados de Simulación y Medición de Latencias
-> **[EVIDENCIA FOTOGRÁFICA 7: SIMULACIÓN MODELSIM FPU]**  
-> *Guarda la captura con el nombre `images/fpu_modelsim.png`.*
 
 ![Simulación de la FPU a 50 MHz](images/fpu_modelsim.png)
+
+**Análisis Temporal y Medición de Latencias ($f_{\text{clk}} = 50\text{ MHz} \implies T_{\text{clk}} = 20\text{ ns}$):**
+
+1. **Fase de Inicialización ($0 - 40\text{ ns}$):**
+   - La señal `areset_tb` permanece en `'1'` durante 2 ciclos de reloj ($40\text{ ns}$), limpiando los registros internos de *pipeline* de los 4 bloques IP (`result_tb = 0x00000000`).
+
+2. **Prueba 1 ($t = 50\text{ ns} \rightarrow 330\text{ ns}$): $A = 6.5$ (`0x40D00000`), $B = 2.0$ (`0x40000000`)**
+   - **Inyección de operandos ($t = 50\text{ ns}$):** En el tercer flanco de subida de `clk_tb`, ingresan simultáneamente $A = 6.5$ y $B = 2.0$ a los 4 operadores en paralelo, con `selop_tb = "00"` (Suma).
+   - **Suma (`selop = "00"`, Latencia medida $= 2\text{ ciclos} = 40\text{ ns}$):**
+     - Durante $50 - 90\text{ ns}$ (2 periodos de reloj), la suma viaja por las 2 etapas de *pipeline* de `fp_add`.
+     - Exactamente en el flanco de subida de **$t = 90\text{ ns}$** ($50\text{ ns} + 2 \times 20\text{ ns}$), emerge en `result_tb` el valor **`0x41080000`** ($8.5 = 6.5 + 2.0$).
+   - **Resta (`selop = "01"`, Latencia $= 2\text{ ciclos} = 40\text{ ns}$):**
+     - Como `fp_sub` recibió los operandos en paralelo en $t = 50\text{ ns}$, su resultado interno también quedó listo en $t = 90\text{ ns}$. Por ello, al conmutar `selop_tb` a `"01"` en $t = 110\text{ ns}$, el MUX 4:1 entrega de inmediato **`0x40900000`** ($4.5 = 6.5 - 2.0$).
+   - **Multiplicación (`selop = "10"`, Latencia $= 2\text{ ciclos} = 40\text{ ns}$):**
+     - De igual forma, `fp_mul` completó sus 2 ciclos en $t = 90\text{ ns}$; al cambiar `selop_tb` a `"10"` en $t = 150\text{ ns}$, la salida muestra inmediatamente **`0x41500000`** ($13.0 = 6.5 \times 2.0$).
+   - **División (`selop = "11"`, Latencia medida $= 11\text{ ciclos} = 220\text{ ns}$):**
+     - En $t = 190\text{ ns}$ (7 ciclos después de $t = 50\text{ ns}$), `selop_tb` cambia a `"11"`. Como el divisor requiere **11 ciclos**, entre $190\text{ ns}$ y $270\text{ ns}$ la salida aún muestra el valor transitorio de la división inicial (`0x7F800001`, `NaN` de `0/0`).
+     - Exactamente en el flanco de subida de **$t = 270\text{ ns}$** ($50\text{ ns} + 11 \times 20\text{ ns} = 270\text{ ns}$, es decir, **11 ciclos = 220 ns** después de haber inyectado `6.5` y `2.0`), el divisor completa su *pipeline* y `result_tb` se actualiza a **`0x40500000`** ($3.25 = 6.5 / 2.0$).
+
+3. **Prueba 2 ($t = 330\text{ ns} \rightarrow 610\text{ ns}$): $A = 10.5$ (`0x41280000`), $B = -3.0$ (`0xC0400000`)**
+   - **Inyección de operandos ($t = 330\text{ ns}$):** Se cargan $A = 10.5$ y $B = -3.0$ con `selop_tb = "00"`.
+   - **Medición de latencia de Suma ($2\text{ ciclos} = 40\text{ ns}$):** Entre $330\text{ ns}$ y $370\text{ ns}$ permanece el resultado anterior en la salida del sumador, y exactamente en **$t = 370\text{ ns}$** ($330\text{ ns} + 40\text{ ns}$) aparece **`0x40F00000`** ($7.5 = 10.5 + (-3.0)$).
+   - **Resta ($t = 390\text{ ns}$, `selop = "01"`):** Entrega **`0x41580000`** ($13.5 = 10.5 - (-3.0)$).
+   - **Multiplicación ($t = 430\text{ ns}$, `selop = "10"`):** Entrega **`0xC1FC0000`** ($-31.5 = 10.5 \times (-3.0)$).
+   - **Medición de latencia de División ($11\text{ ciclos} = 220\text{ ns}$):** Al seleccionar `selop = "11"` en $t = 470\text{ ns}$ (7 ciclos después de $330\text{ ns}$), la salida aún conserva `0x40500000` ($3.25$, resultado de la Prueba 1) durante 4 ciclos adicionales, hasta que exactamente en **$t = 550\text{ ns}$** ($330\text{ ns} + 11 \times 20\text{ ns} = 550\text{ ns}$) emerge **`0xC0600000`** ($-3.5 = 10.5 / (-3.0)$).
+
+| Operación | Código `selop` | Latencia en Ciclos | Latencia a 50 MHz ($T_{\text{clk}} = 20\text{ ns}$) | Ejemplo Verificado 1 ($6.5, 2.0$) | Ejemplo Verificado 2 ($10.5, -3.0$) |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Suma** (`fp_add`) | `00` | **2 ciclos** | **40 ns** | `0x41080000` ($8.5$) | `0x40F00000` ($7.5$) |
+| **Resta** (`fp_sub`) | `01` | **2 ciclos** | **40 ns** | `0x40900000` ($4.5$) | `0x41580000` ($13.5$) |
+| **Multiplicación** (`fp_mul`) | `10` | **2 ciclos** | **40 ns** | `0x41500000` ($13.0$) | `0xC1FC0000` ($-31.5$) |
+| **División** (`fp_div`) | `11` | **11 ciclos** | **220 ns** | `0x40500000` ($3.25$) | `0xC0600000` ($-3.5$) |
+
 

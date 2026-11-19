@@ -18,9 +18,16 @@ simulation/
 c5_pin_model_dump.txt
 cio_dump_disallowed_lists.echo
 greybox_tmp/
+.cnxerr
+qmegawiz_errors_log.txt
 
 # ModelSim / QuestaSim temporary files
 work/
+altera_lnsim/
+altera_lnsim_ver/
+altera_ver/
+cyclonev/
+cyclonev_ver/
 transcript
 *.wlf
 vsim.wlf
