@@ -18,10 +18,82 @@ set_global_assignment -name EDA_OUTPUT_DATA_FORMAT "VERILOG HDL" -section_id eda
 set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
 set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
 
-set_global_assignment -name TOP_LEVEL_ENTITY univ_bin_counter
+# Entidad superior: Cronometro Digital (Ejercicio 2)
+set_global_assignment -name TOP_LEVEL_ENTITY stopwatch_top
+set_global_assignment -name VHDL_FILE ej1_univ_counter/vhdl/src/univ_bin_counter.vhd
+set_global_assignment -name VHDL_FILE ej2_stopwatch/vhdl/src/sevenSegmentDecoder.vhd
+set_global_assignment -name VHDL_FILE ej2_stopwatch/vhdl/src/stopwatch_top.vhd
+set_global_assignment -name SDC_FILE stopwatch.sdc
+
+# ==========================================================================
+# Asignacion de Pines — Tarjeta Terasic DE1-SoC (Cyclone V 5CSEMA5F31C6)
+# ==========================================================================
+
+# Reloj base 50 MHz
+set_location_assignment PIN_AF14 -to CLOCK_50
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CLOCK_50
+
+# Interruptores (SW[0] = enable general, SW[1] = go/pausa)
+set_location_assignment PIN_AB12 -to SW[0]
+set_location_assignment PIN_AC12 -to SW[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SW[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SW[1]
+
+# Pulsador (KEY[0] = sync_clr, activo en bajo)
+set_location_assignment PIN_AA14 -to KEY[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to KEY[0]
+
+# Display 7-Segmentos HEX0 (Decimas de segundo)
+set_location_assignment PIN_AE26 -to HEX0[0]
+set_location_assignment PIN_AE27 -to HEX0[1]
+set_location_assignment PIN_AE28 -to HEX0[2]
+set_location_assignment PIN_AG27 -to HEX0[3]
+set_location_assignment PIN_AF28 -to HEX0[4]
+set_location_assignment PIN_AG28 -to HEX0[5]
+set_location_assignment PIN_AH28 -to HEX0[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HEX0[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HEX0[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HEX0[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HEX0[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HEX0[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HEX0[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HEX0[6]
+
+# Display 7-Segmentos HEX1 (Unidades de segundo)
+set_location_assignment PIN_AJ29 -to HEX1[0]
+set_location_assignment PIN_AH29 -to HEX1[1]
+set_location_assignment PIN_AH30 -to HEX1[2]
+set_location_assignment PIN_AG30 -to HEX1[3]
+set_location_assignment PIN_AF29 -to HEX1[4]
+set_location_assignment PIN_AF30 -to HEX1[5]
+set_location_assignment PIN_AD27 -to HEX1[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HEX1[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HEX1[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HEX1[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HEX1[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HEX1[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HEX1[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HEX1[6]
+
+# Display 7-Segmentos HEX2 (Decenas de segundo)
+set_location_assignment PIN_AB23 -to HEX2[0]
+set_location_assignment PIN_AE29 -to HEX2[1]
+set_location_assignment PIN_AD29 -to HEX2[2]
+set_location_assignment PIN_AC28 -to HEX2[3]
+set_location_assignment PIN_AD30 -to HEX2[4]
+set_location_assignment PIN_AC29 -to HEX2[5]
+set_location_assignment PIN_AC30 -to HEX2[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HEX2[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HEX2[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HEX2[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HEX2[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HEX2[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HEX2[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HEX2[6]
 
 set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
 set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
+
 
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
