@@ -63,6 +63,18 @@ SoC/
 │       ├── verilog/ (src/, tb/)
 │       └── sim/
 │
+├── Taller5/                                  # Taller 5: Timing Simulation (RTL vs Gate-Level SDF)
+│   ├── dff_timing.qpf                        # Proyecto Quartus II (Cyclone IV GX EP4CGX15BF14C6)
+│   ├── dff_timing.qsf                        # Configuraciones Quartus y EDA Netlist Writer (VHDL .vho/.sdo)
+│   ├── ej1_dff_timing/                       # Flip-Flop D con generador BIST (dff_timing)
+│   │   ├── vhdl/ (src/, tb/)
+│   │   ├── verilog/ (src/, tb/)
+│   │   └── sim/                              # Scripts ModelSim funcional y Gate-Level SDF (.do)
+│   └── ej2_case_study/                       # Caso de estudio: Cadenas de retardo y comparación de familias FPGA
+│       ├── vhdl/ (src/, tb/)
+│       ├── verilog/ (src/, tb/)
+│       └── sim/
+│
 └── reports/                                  # Documentación técnica, enunciados y reportes
     ├── Taller1/
     │   ├── enunciado_taller1.md              # Enunciado del Taller 1
@@ -79,10 +91,15 @@ SoC/
     │   ├── reporte_taller3.md                # Reporte técnico consolidado (Parte I y Parte II)
     │   └── images/                           # Capturas RTL, recursos Fitter y simulaciones ModelSim
     │
-    └── Taller4/
-        ├── enunciado_taller4.md              # Enunciado del Taller 4
-        ├── reporte_taller4.md                # Reporte técnico consolidado (Contadores y Cronómetro)
-        └── images/                           # Capturas RTL Viewer y simulaciones ModelSim
+    ├── Taller4/
+    │   ├── enunciado_taller4.md              # Enunciado del Taller 4
+    │   ├── reporte_taller4.md                # Reporte técnico consolidado (Contadores y Cronómetro)
+    │   └── images/                           # Capturas RTL Viewer y simulaciones ModelSim
+    │
+    └── Taller5/
+        ├── enunciado_taller5.md              # Enunciado del Taller 5 (Timing Simulation)
+        ├── reporte_taller5.md                # Reporte técnico consolidado (Simulación Funcional vs SDF)
+        └── images/                           # Capturas TimeQuest, RTL Viewer y simulaciones SDF
 ```
 
 ---

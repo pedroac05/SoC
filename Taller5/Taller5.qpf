@@ -1,0 +1,12 @@
+# -------------------------------------------------------------------------- #
+# Quartus II 64-Bit Version 13.0.1 / Quartus Prime 20.1.1
+# Project: Taller5 (Revision: dff_timing)
+# -------------------------------------------------------------------------- #
+
+QUARTUS_VERSION = "13.0"
+DATE = "22:15:00  November 22, 2026"
+
+# Revisions
+
+PROJECT_REVISION = "dff_timing"
+PROJECT_REVISION = "case_study"
