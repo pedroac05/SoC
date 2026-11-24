@@ -87,6 +87,12 @@ SoC/
 │       ├── verilog/ (src/, tb/)
 │       └── sim/                              # Scripts ModelSim (.do) para edge_detect y fifo_hw_top
 │
+├── Taller7/                                  # Taller 7: DE1-SoC — Programación SoC en ARM-Linux
+│   └── DE1_SoC_demo/                         # Proyecto híbrido HPS (ARM-Linux) + FPGA
+│       ├── hw/ (hdl/, modelsim/, quartus/)   # Hardware FPGA, Platform Designer (soc_system.qsys) y Quartus
+│       ├── sw/hps/                           # Software HPS (application/, preloader/, u-boot/, linux/{source,rootfs})
+│       └── sdcard/ (a2/, fat32/)             # Imágenes y particiones para arranque en microSD
+│
 └── reports/                                  # Documentación técnica, enunciados y reportes
     ├── Taller1/
     │   ├── enunciado_taller1.md              # Enunciado del Taller 1
@@ -113,10 +119,15 @@ SoC/
     │   ├── reporte_taller5.md                # Reporte técnico consolidado (Simulación Funcional vs SDF)
     │   └── images/                           # Capturas TimeQuest, RTL Viewer y simulaciones SDF
     │
-    └── Taller6/
-        ├── enunciado_taller6.md              # Enunciado del Taller 6 (Buffer FIFO Circular)
-        ├── reporte_taller6.md                # Reporte técnico consolidado (FIFO Circular y Prueba en Hardware)
-        └── images/                           # Capturas RTL Viewer y simulaciones ModelSim
+    ├── Taller6/
+    │   ├── enunciado_taller6.md              # Enunciado del Taller 6 (Buffer FIFO Circular)
+    │   ├── reporte_taller6.md                # Reporte técnico consolidado (FIFO Circular y Prueba en Hardware)
+    │   └── images/                           # Capturas RTL Viewer y simulaciones ModelSim
+    │
+    └── Taller7/
+        ├── enunciado_taller7.md              # Órdenes directas de desarrollo del Taller 7 (DE1-SoC ARM-Linux)
+        ├── guia_paso_a_paso_taller7.md       # Checklist de requisitos y guía paso a paso ejecutable
+        └── images/                           # Evidencias de Platform Designer, Quartus y pruebas ARM-Linux
 ```
 
 ---
