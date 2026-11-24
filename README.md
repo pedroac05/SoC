@@ -75,6 +75,18 @@ SoC/
 │       ├── verilog/ (src/, tb/)
 │       └── sim/
 │
+├── Taller6/                                  # Taller 6: Circuitos de Memoria — Buffer FIFO Circular
+│   ├── Taller6.qpf                           # Proyecto Quartus Prime (Cyclone V DE1-SoC)
+│   ├── Taller6.qsf                           # Configuraciones y asignaciones de pines Quartus
+│   ├── ej1_fifo_buffer/                      # Buffer FIFO circular parametrizable (Register File + Control)
+│   │   ├── vhdl/ (src/, tb/)
+│   │   ├── verilog/ (src/, tb/)
+│   │   └── sim/                              # Scripts ModelSim (.do) replicando la Figura 2 (a..i)
+│   └── ej2_fifo_hw/                          # Prueba de Buffer FIFO (16x4) en hardware con edge_detect y 7-Seg
+│       ├── vhdl/ (src/, tb/)
+│       ├── verilog/ (src/, tb/)
+│       └── sim/                              # Scripts ModelSim (.do) para edge_detect y fifo_hw_top
+│
 └── reports/                                  # Documentación técnica, enunciados y reportes
     ├── Taller1/
     │   ├── enunciado_taller1.md              # Enunciado del Taller 1
@@ -96,10 +108,15 @@ SoC/
     │   ├── reporte_taller4.md                # Reporte técnico consolidado (Contadores y Cronómetro)
     │   └── images/                           # Capturas RTL Viewer y simulaciones ModelSim
     │
-    └── Taller5/
-        ├── enunciado_taller5.md              # Enunciado del Taller 5 (Timing Simulation)
-        ├── reporte_taller5.md                # Reporte técnico consolidado (Simulación Funcional vs SDF)
-        └── images/                           # Capturas TimeQuest, RTL Viewer y simulaciones SDF
+    ├── Taller5/
+    │   ├── enunciado_taller5.md              # Enunciado del Taller 5 (Timing Simulation)
+    │   ├── reporte_taller5.md                # Reporte técnico consolidado (Simulación Funcional vs SDF)
+    │   └── images/                           # Capturas TimeQuest, RTL Viewer y simulaciones SDF
+    │
+    └── Taller6/
+        ├── enunciado_taller6.md              # Enunciado del Taller 6 (Buffer FIFO Circular)
+        ├── reporte_taller6.md                # Reporte técnico consolidado (FIFO Circular y Prueba en Hardware)
+        └── images/                           # Capturas RTL Viewer y simulaciones ModelSim
 ```
 
 ---
