@@ -1,0 +1,84 @@
+# -------------------------------------------------------------------------- #
+# Quartus Prime 20.1.1 Settings File
+# Project: Taller6 — Circuitos de Memoria (Buffer FIFO)
+# Board: Terasic DE1-SoC (Cyclone V 5CSEMA5F31C6)
+# -------------------------------------------------------------------------- #
+
+set_global_assignment -name FAMILY "Cyclone V"
+set_global_assignment -name DEVICE 5CSEMA5F31C6
+set_global_assignment -name ORIGINAL_QUARTUS_VERSION 20.1.1
+set_global_assignment -name PROJECT_CREATION_TIME_DATE "19:24:00  NOVEMBER 23, 2026"
+set_global_assignment -name LAST_QUARTUS_VERSION "20.1.1 Lite Edition"
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
+set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
+set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
+set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 256
+set_global_assignment -name EDA_SIMULATION_TOOL "ModelSim-Altera (VHDL)"
+set_global_assignment -name EDA_OUTPUT_DATA_FORMAT VHDL -section_id eda_simulation
+set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
+set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
+
+# Entidad superior: Circuito de prueba de Buffer FIFO en hardware (Parte 2 - Figura 4)
+set_global_assignment -name TOP_LEVEL_ENTITY fifo_hw_top
+set_global_assignment -name VHDL_FILE ej1_fifo_buffer/vhdl/src/register_file.vhd
+set_global_assignment -name VHDL_FILE ej1_fifo_buffer/vhdl/src/fifo_ctrl.vhd
+set_global_assignment -name VHDL_FILE ej1_fifo_buffer/vhdl/src/fifo.vhd
+set_global_assignment -name VHDL_FILE ej2_fifo_hw/vhdl/src/edge_detect.vhd
+set_global_assignment -name VHDL_FILE ej2_fifo_hw/vhdl/src/bin_to_sseg.vhd
+set_global_assignment -name VHDL_FILE ej2_fifo_hw/vhdl/src/fifo_hw_top.vhd
+
+# ==========================================================================
+# Asignacion de Pines — Tarjeta Terasic DE1-SoC (Cyclone V 5CSEMA5F31C6)
+# ==========================================================================
+
+# Reloj base 50 MHz (CLOCK_50)
+set_location_assignment PIN_AF14 -to clk
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to clk
+
+# Interruptores de Datos w_data[3:0] -> SW[3:0]
+set_location_assignment PIN_AB12 -to w_data[0]
+set_location_assignment PIN_AC12 -to w_data[1]
+set_location_assignment PIN_AF9 -to w_data[2]
+set_location_assignment PIN_AF10 -to w_data[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to w_data[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to w_data[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to w_data[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to w_data[3]
+
+# Interruptor de Reset -> SW[9] (activo en alto: '1' = reset, '0' = operacion)
+set_location_assignment PIN_AE12 -to reset
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to reset
+
+# Botones de Control: wr (PUSH) -> KEY[0], rd (POP) -> KEY[1]
+set_location_assignment PIN_AA14 -to wr
+set_location_assignment PIN_AA15 -to rd
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to wr
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to rd
+
+# LEDs de Estado: empty -> LEDR[0], full -> LEDR[1]
+set_location_assignment PIN_V16 -to empty
+set_location_assignment PIN_W16 -to full
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to empty
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to full
+
+# Display 7-Segmentos HEX0 -> r_data_hex[6:0]
+set_location_assignment PIN_AE26 -to r_data_hex[0]
+set_location_assignment PIN_AE27 -to r_data_hex[1]
+set_location_assignment PIN_AE28 -to r_data_hex[2]
+set_location_assignment PIN_AG27 -to r_data_hex[3]
+set_location_assignment PIN_AF28 -to r_data_hex[4]
+set_location_assignment PIN_AG28 -to r_data_hex[5]
+set_location_assignment PIN_AH28 -to r_data_hex[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to r_data_hex[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to r_data_hex[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to r_data_hex[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to r_data_hex[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to r_data_hex[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to r_data_hex[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to r_data_hex[6]
+
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
+
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
