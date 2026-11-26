@@ -40,3 +40,24 @@ modelsim.ini
 .idea/
 Thumbs.db
 .DS_Store
+
+# Quartus / Platform Designer (Qsys) generated SoC files
+.qsys_edit/
+soc_system/
+hps_isw_handoff/
+*.sopcinfo
+hps_sdram_p0_all_pins.txt
+hps_sdram_p0_summary.csv
+
+# SoC EDS / Preloader / SD card binary artifacts and archives
+*.zip
+*.tar.gz
+*.rbf
+*.dtb
+*.img
+*.scr
+*.bin
+zImage
+Taller7/DE1_SoC_demo/sw/hps/preloader/uboot-socfpga/
+Taller7/DE1_SoC_demo/sw/hps/preloader/generated/
+Taller7/DE1_SoC_demo/sw/hps/preloader/*.ds
