@@ -93,6 +93,15 @@ SoC/
 │       ├── sw/hps/                           # Software HPS (application/, preloader/, u-boot/, linux/{source,rootfs})
 │       └── sdcard/ (a2/, fat32/)             # Imágenes y particiones para arranque en microSD
 │
+├── Taller8/                                  # Taller 8: Integración de Componentes Custom en Platform Designer
+│   ├── ej1_divisor/                          # Divisor entero parametrizable (FSM-D en VHDL + sim ModelSim)
+│   ├── ej2_divisor_avalon/                   # Circuito envolvente Avalon MM-Slave para el divisor (VHDL + sim)
+│   ├── ej3_fpu_avalon/                       # ALU de Punto Flotante FP32 con interfaz Avalon (IP cores + VHDL)
+│   └── DE1_SoC_demo/                         # Sistema SoC HPS+FPGA con aceleradores custom (divisor y FPU)
+│       ├── hw/ (hdl/{divisor,fpu_avalon}, modelsim/, quartus/)
+│       ├── sw/hps/ (application/, preloader/)
+│       └── sdcard/ (a2/, fat32/)
+│
 └── reports/                                  # Documentación técnica, enunciados y reportes
     ├── Taller1/
     │   ├── enunciado_taller1.md              # Enunciado del Taller 1
@@ -124,11 +133,15 @@ SoC/
     │   ├── reporte_taller6.md                # Reporte técnico consolidado (FIFO Circular y Prueba en Hardware)
     │   └── images/                           # Capturas RTL Viewer y simulaciones ModelSim
     │
-    └── Taller7/
-        ├── enunciado_taller7.md              # Órdenes directas de desarrollo del Taller 7 (DE1-SoC ARM-Linux)
-        ├── guia_paso_a_paso_taller7.md       # Checklist de requisitos y guía paso a paso ejecutable
-        ├── reporte_taller7.md                # Reporte técnico consolidado (HPS + FPGA, DDR3 y Apps C-Linux)
-        └── images/                           # Evidencias de Platform Designer, Quartus y pruebas ARM-Linux
+    ├── Taller7/
+    │   ├── enunciado_taller7.md              # Órdenes directas de desarrollo del Taller 7 (DE1-SoC ARM-Linux)
+    │   ├── guia_paso_a_paso_taller7.md       # Checklist de requisitos y guía paso a paso ejecutable
+    │   ├── reporte_taller7.md                # Reporte técnico consolidado (HPS + FPGA, DDR3 y Apps C-Linux)
+    │   └── images/                           # Evidencias de Platform Designer, Quartus y pruebas ARM-Linux
+    │
+    └── Taller8/
+        ├── enunciado_taller8.md              # Enunciado del Taller 8 (Componentes Custom en Platform Designer)
+        └── images/                           # Evidencias de ModelSim, Component Editor, Qsys y HPS-Linux
 ```
 
 ---
