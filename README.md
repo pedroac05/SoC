@@ -102,6 +102,12 @@ SoC/
 │       ├── sw/hps/ (application/, preloader/)
 │       └── sdcard/ (a2/, fat32/)
 │
+├── Taller9/                                  # Taller 9: Uso de Periféricos y Diseño de Manejadores (Drivers)
+│   └── DE1_SoC_demo/                         # Sistema SoC HPS+FPGA con Interval Timers y PIO Edge-Capture
+│       ├── hw/ (hdl/, modelsim/, quartus/)   # Hardware FPGA (soc_system.qsys con sys_timer y usr_timer)
+│       ├── sw/hps/                           # Software HPS (preloader/ y application/{drivers,flashing_led,ej1..2})
+│       └── sdcard/ (a2/, fat32/)             # Archivos actualizados de arranque para microSD
+│
 └── reports/                                  # Documentación técnica, enunciados y reportes
     ├── Taller1/
     │   ├── enunciado_taller1.md              # Enunciado del Taller 1
@@ -139,9 +145,13 @@ SoC/
     │   ├── reporte_taller7.md                # Reporte técnico consolidado (HPS + FPGA, DDR3 y Apps C-Linux)
     │   └── images/                           # Evidencias de Platform Designer, Quartus y pruebas ARM-Linux
     │
-    └── Taller8/
-        ├── enunciado_taller8.md              # Enunciado del Taller 8 (Componentes Custom en Platform Designer)
-        └── images/                           # Evidencias de ModelSim, Component Editor, Qsys y HPS-Linux
+    ├── Taller8/
+    │   ├── enunciado_taller8.md              # Enunciado del Taller 8 (Componentes Custom en Platform Designer)
+    │   └── images/                           # Evidencias de ModelSim, Component Editor, Qsys y HPS-Linux
+    │
+    └── Taller9/
+        ├── enunciado_taller9.md              # Enunciado del Taller 9 (Periféricos PIO/Timer y Drivers Ad Hoc)
+        └── images/                           # Evidencias de Platform Designer, drivers y pruebas en DE1-SoC
 ```
 
 ---
