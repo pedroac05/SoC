@@ -127,11 +127,12 @@ SoC/
     └── Taller7/
         ├── enunciado_taller7.md              # Órdenes directas de desarrollo del Taller 7 (DE1-SoC ARM-Linux)
         ├── guia_paso_a_paso_taller7.md       # Checklist de requisitos y guía paso a paso ejecutable
+        ├── reporte_taller7.md                # Reporte técnico consolidado (HPS + FPGA, DDR3 y Apps C-Linux)
         └── images/                           # Evidencias de Platform Designer, Quartus y pruebas ARM-Linux
 ```
 
 ---
 
 ## 🛠️ Herramientas de Desarrollo
-- **Quartus Prime Lite Edition (v20.1.1 / v13.0 SP1)**: Síntesis lógica, mapeo tecnológico, generación de bloques IP, visor RTL Viewer y programación JTAG de la tarjeta **DE1-SoC (Cyclone V `5CSEMA5F31C6`)**.
+- **Quartus Prime Lite Edition (v20.1.1 / v18.1 / v13.0 SP1) & Intel SoC EDS (v18.1)**: Síntesis lógica, Platform Designer (`.qsys`), generación de Preloader/BSP, mapeo tecnológico y configuración SoC de la tarjeta **DE1-SoC (Cyclone V `5CSEMA5F31C6`)**.
 - **ModelSim-Altera / QuestaSim**: Simulación funcional y temporal a 50 MHz, análisis de formas de onda (*Wave*) y verificación exhaustiva mediante *testbenches*.
