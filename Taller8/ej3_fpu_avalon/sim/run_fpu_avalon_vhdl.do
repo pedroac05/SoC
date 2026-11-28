@@ -7,6 +7,13 @@
 vlib work
 vmap work work
 
+# Compilar libreria altera_lnsim actualizada (Quartus 20.1.1) + wrapper VHDL puro
+# para altera_syncram (evita conflicto mixto SV/VHDL en ModelSim Starter Edition)
+vlib altera_lnsim
+vmap altera_lnsim altera_lnsim
+vcom -93 -work altera_lnsim D:/Programas/Quartus/quartus/eda/sim_lib/altera_lnsim_components.vhd
+vcom -93 -work altera_lnsim altera_syncram_sim.vhd
+
 # Compilar libreria DSPBA (compartida por los 4 IP cores)
 vcom -93 -work work ../ip/fp_add/dspba_library_package.vhd
 vcom -93 -work work ../ip/fp_add/dspba_library.vhd
